@@ -26,7 +26,6 @@ struct token_t {
   size_t        len;
   size_t        pos;
   source_t*     src;
-  int           indent_size;
 
 };
 

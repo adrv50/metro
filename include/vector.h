@@ -9,15 +9,14 @@
 #define  vector_last(_V)      vector_get((_V), (_V)->count - 1)
 #define  vector_size(_V)      ((_V)->type_width * (_V)->count)
 
-typedef struct vector vector;
-struct vector {
+typedef struct {
   u16       type_width;     // size of the type of element
   size_t    count;          // elements count
 
   size_t    _actual_count;
   void*     _data;
   size_t    _datasize;
-};
+} vector;
 
 // constructors
 vector*  vector_new(u16 type_width);

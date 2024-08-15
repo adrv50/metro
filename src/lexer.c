@@ -134,7 +134,7 @@ static char* lexer_cur_ptr(mtlexer* lx) {
 }
 
 static void lexer_pass_space(mtlexer* lx) {
-  while( lexer_check(lx) && lexer_peek(lx) == ' ' )
+  while( lexer_check(lx) && issspace(lexer_peek(lx)) )
     lx->position++;
 }
 
@@ -227,6 +227,18 @@ token_t* lexer_lex(mtlexer* lx) {
         lx->position++;
 
       if( !closed ) {
+        mt_abort_with(mt_new_error(ERR_INVALID_TOKEN, "not closed literal", pos));
+      }
+    }
+
+    // string
+    else if( lexer_eat(lx, '"') ) {
+      bool closed;
+
+      while( !(closed = lexer_eat(lx, '"')) )
+        lx->position++;
+
+      if( !closed ) {
         
       }
     }
@@ -236,21 +248,9 @@ token_t* lexer_lex(mtlexer* lx) {
       cur = token_new(TOK_IDENTIFIER, cur, str, lexer_pass(lx, "__09azAZ"), pos);
     }
 
-    // indent
-    else if( c == '\n' ) {
-      lx->position++;
-
-      size_t spacecount = lexer_pass(lx, "  ");
-
-      if( spacecount == 0 )
-        continue;
-
-
-    }
-
     // punctuater
     else if( !(cur = lexer_eat_punctuater(lx, cur)) ) {
-      todo_impl;
+      mt_new_error(ERR_INVALID_TOKEN, )
 
     }
 

@@ -5,7 +5,6 @@
 
 #include "lexer.h"
 #include "parser.h"
-#include "eval.h"
 
 #include "metro.h"
 
@@ -73,14 +72,16 @@ int main(int argc, char** argv) {
 
   token_t*  tok = lexer_lex(lexer);
 
+  mt_error* e = mt_new_error(ERR_INVALID_TOKEN, "test error", tok);
+
+  mt_error_emit(e);
+
   print_token(tok);
 
   node_t* nd = parser_parse(lexer->src, tok);
 
   print_node(nd);
 
-  evaluator_init(nd);
-  mt_object_t* result = evaluator_evalnode(nd);
 
   node_free(nd);
 

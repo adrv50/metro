@@ -9,6 +9,7 @@
         "eval.h": "c",
         "object.h": "c",
         "typeinfo.h": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "lexer.h": "c"
     }
 }
