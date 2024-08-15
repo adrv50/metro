@@ -11,6 +11,6 @@ struct mtlexer {
   size_t      length;
 };
 
-mtlexer*    lexer_new(char* path);
+mtlexer*    lexer_new(source_t* src);
 void        lexer_free(mtlexer* lx);
 token_t*    lexer_lex(mtlexer* lx);

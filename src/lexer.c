@@ -104,10 +104,10 @@ void source_free(source_t* s) {
   free(s);
 }
 
-mtlexer* lexer_new(char* path) {
+mtlexer* lexer_new(source_t* src) {
   mtlexer* lexer = calloc(1, sizeof(mtlexer));
 
-  lexer->src        = source_new(path);
+  lexer->src        = src;
   lexer->position   = 0;
   lexer->length     = lexer->src->length;
 
@@ -134,7 +134,7 @@ static char* lexer_cur_ptr(mtlexer* lx) {
 }
 
 static void lexer_pass_space(mtlexer* lx) {
-  while( lexer_check(lx) && issspace(lexer_peek(lx)) )
+  while( lexer_check(lx) && isspace(lexer_peek(lx)) )
     lx->position++;
 }
 
@@ -239,7 +239,7 @@ token_t* lexer_lex(mtlexer* lx) {
         lx->position++;
 
       if( !closed ) {
-        
+        mt_abort_with(mt_new_error(ERR_INVALID_TOKEN, "not closed literal", pos));
       }
     }
 
@@ -250,8 +250,7 @@ token_t* lexer_lex(mtlexer* lx) {
 
     // punctuater
     else if( !(cur = lexer_eat_punctuater(lx, cur)) ) {
-      mt_new_error(ERR_INVALID_TOKEN, )
-
+      mt_abort_with(mt_new_error(ERR_INVALID_TOKEN, "invalid token", pos));
     }
 
     lexer_pass_space(lx);

@@ -32,8 +32,8 @@ void node_free(node_t* node) {
   free(node);
 }
 
-node_t** node_append(node_t* node, node_t** item) {
-  return (node_t**)vector_append(node->child, item);
+node_t** node_append(node_t* node, node_t* item) {
+  return (node_t**)vector_append(node->child, &item);
 }
 
 bool node_is_same_name(node_t* node, char const* name) {

@@ -48,7 +48,8 @@ void  mt_abort_with(mt_error* err);
 
 typedef struct mtdriver mtdriver;
 struct mtdriver {
-  mtlexer*  lexer;
+  source_t*   source;
+  mtlexer*    lexer;
 };
 
 // create a new driver instance
@@ -56,6 +57,8 @@ mtdriver* driver_new(char* path);
 
 // delete memory
 void driver_free(mtdriver* dr);
+
+int driver_main(mtdriver* dr, int argc, char** argv);
 
 // get the current compiling source
 source_t* driver_get_current_source(mtdriver* dr);

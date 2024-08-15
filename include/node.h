@@ -38,7 +38,7 @@ node_t*  node_new_with_token(node_kind_t k, token_t* tok);
 node_t*  node_new_with_lr(node_kind_t k, token_t* tok, node_t* lhs, node_t* rhs);
 void node_free(node_t* node);
 
-node_t*  node_append(node_t* node, node_t* item);
+node_t**  node_append(node_t* node, node_t* item);
 
 bool node_is_same_name(node_t* node, char const* name);
 
