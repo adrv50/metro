@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "node.h": "c",
+        "parser.h": "c",
+        "metro.h": "c",
+        "string.h": "c",
+        "interp.h": "c",
+        "vector.h": "c",
+        "eval.h": "c",
+        "object.h": "c",
+        "typeinfo.h": "c",
+        "types.h": "c"
+    }
+}
