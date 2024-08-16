@@ -15,6 +15,7 @@
         "alert.h": "c",
         "bitset": "c",
         "chrono": "c",
-        "algorithm": "c"
+        "algorithm": "c",
+        "compile.h": "c"
     }
 }

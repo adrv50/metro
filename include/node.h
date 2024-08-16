@@ -3,10 +3,14 @@
 #include "token.h"
 #include "vector.h"
 
-#define   nd_get_child(_ND, _N)    (vector_get_as(node_t*, (_ND)->child, _N))
+#define   nd_get_child(_ND, _INDEX)    (vector_get_as(node_t*, (_ND)->child, _INDEX))
 
-#define   nd_lhs(_ND)     nd_get_child(_ND, 0)
-#define   nd_rhs(_ND)     nd_get_child(_ND, 1)
+#define   nd_lhs(_ND)       nd_get_child(_ND, 0)
+#define   nd_rhs(_ND)       nd_get_child(_ND, 1)
+
+#define   nd_if_cond(n)     nd_get_child(n, 0)
+#define   nd_if_true(n)     nd_get_child(n, 1)
+#define   nd_if_false(n)    nd_get_child(n, 2)
 
 typedef u16  node_kind_t;
 
@@ -18,6 +22,22 @@ enum {
   ND_SUB,
   ND_MUL,
   ND_DIV,
+  ND_MOD,   // %
+
+  ND_ASSIGN,
+
+  ND_VARDEF,    // let
+
+  ND_BLOCK,
+
+  ND_IF,
+  ND_FOR,
+  ND_WHILE,
+
+  ND_FUNCTION,
+
+  ND_PROGRAM,   // (root)
+
 };
 
 typedef struct node_t node_t;
@@ -38,7 +58,7 @@ node_t*  node_new_with_token(node_kind_t k, token_t* tok);
 node_t*  node_new_with_lr(node_kind_t k, token_t* tok, node_t* lhs, node_t* rhs);
 void node_free(node_t* node);
 
-node_t**  node_append(node_t* node, node_t** item);
+node_t**  node_append(node_t* node, node_t* item);
 
 bool node_is_same_name(node_t* node, char const* name);
 

@@ -158,10 +158,12 @@ int driver_main(mtdriver* dr, int argc, char** argv) {
 
   node_t* nd = parser_parse(dr->source, tok);
 
-  print_node(nd);
+  // print_node(nd);
+  // puts("\n");
+
+  compiler_compile_full(nd);
 
   node_free(nd);
-
   metro_exit();
 
   return 0;

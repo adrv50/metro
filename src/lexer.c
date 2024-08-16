@@ -208,7 +208,7 @@ token_t* lexer_lex(mtlexer* lx) {
     char*   str   = lexer_cur_ptr(lx);
     size_t  pos   = lx->position;
 
-    // int
+    // int or float
     if( isdigit(c) ) {
       cur = token_new(TOK_INT, cur, str, lexer_pass(lx, "09"), pos);
 
@@ -216,6 +216,12 @@ token_t* lexer_lex(mtlexer* lx) {
       if( lexer_eat(lx, '.') ) {
         cur->kind = TOK_FLOAT;
         cur->len += lexer_pass(lx, "09") + lexer_eat(lx, 'f') + 1;
+
+        cur->val_f = atof(str);
+      }
+      // int
+      else {
+        cur->val = atoi(str);
       }
     }
 

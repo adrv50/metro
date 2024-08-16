@@ -43,5 +43,5 @@
   #define alertfmt(...)   (void)0
 
   #define todo_impl       { fprintf(stderr, "%s:%u: not implemented error\n",__FILE__,__LINE__); exit(1); }
-  #define panic(...)      { fprintf(stderr, "%s:%u: panic.\n",__FILE__,__LINE__); exit(1); }
+  #define panic           { fprintf(stderr, "%s:%u: panic.\n",__FILE__,__LINE__); exit(1); }
 #endif

@@ -19,15 +19,18 @@ node_t*  node_new_with_lr(node_kind_t kind, token_t* tok, node_t* lhs, node_t* r
   nd->child   = vector_new(sizeof(node_t*));
 
   if( lhs )
-    node_append(nd, &lhs);
+    node_append(nd, lhs);
 
   if( rhs )
-    node_append(nd, &rhs);
+    node_append(nd, rhs);
 
   return nd;
 }
 
 void node_free(node_t* node) {
+  if( !node )
+    return;
+
   for( size_t i = 0; i < node->child->count; i++ ) {
     node_free(*(node_t**)vector_get(node->child, i));
   }
@@ -36,8 +39,8 @@ void node_free(node_t* node) {
   free(node);
 }
 
-node_t** node_append(node_t* node, node_t** item) {
-  return (node_t**)vector_append(node->child, item);
+node_t** node_append(node_t* node, node_t* item) {
+  return (node_t**)vector_append(node->child, &item);
 }
 
 bool node_is_same_name(node_t* node, char const* name) {
@@ -60,6 +63,14 @@ void print_node(node_t* node) {
       print_node(nd_lhs(node));
       printf(" %.*s ", (int)node->tok->len, node->tok->str);
       print_node(nd_rhs(node));
+      break;
+
+    case ND_PROGRAM:
+      for( size_t i = 0; i < node->child->count; i++ ) {
+        print_node(nd_get_child(node, i));
+        puts("");
+      }
+
       break;
   }
 }

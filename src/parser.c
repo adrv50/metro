@@ -45,10 +45,15 @@ static void next() {
   ctx.cur = ctx.cur->next;
 }
 
-static bool eat(char const* str) {
+static bool match(char const* str) {
   size_t len = strlen(str);
 
-  if( getcur()->len >= len && strncmp(str, getcur()->str, len) == 0 ) {
+  return
+    getcur()->len >= len && strncmp(str, getcur()->str, len) == 0;
+}
+
+static bool eat(char const* str) {
+  if( match(str) ) {
     next();
     return true;
   }
@@ -56,11 +61,16 @@ static bool eat(char const* str) {
   return false;
 }
 
-static void expect(char const* str) {
-  if( !eat(str) ) {
+static void expect_keep(char const* str) {
+  if( !match(str) ) {
     mt_abort_with(mt_new_error_from_token(
       ERR_UNEXPECTED_TOKEN, "unexpected token", getcur()));
   }
+}
+
+static void expect(char const* str) {
+  expect_keep(str);
+  next();
 }
 
 static node_t* p_factor() {
@@ -132,8 +142,66 @@ static node_t* p_expr() {
   return p_add();
 }
 
+static node_t* p_stmt() {
+  node_t* node = NULL;
+  bool closed = false;
+
+  token_t* token = getcur();
+
+  // block
+  if( eat("{") ) {
+    node = node_new(ND_BLOCK);
+
+    if( eat("}") )
+      return node;
+
+    while( check() && !(closed = eat("}")) ) {
+      node_append(node, p_stmt());
+    }
+
+    if( !closed )
+      mt_abort_with(mt_new_error_from_token(ERR_NOT_CLOSED_BRACKETS, "not closed", token));
+  }
+
+  // if
+  else if( eat("if") ) {
+    node = node_new(ND_IF);
+
+    // cond
+    node_append(node, p_expr());
+
+    // true-block
+    expect_keep("{");
+    node_append(node, p_stmt());
+
+    // "else if" or "else {"
+    if( eat("else") ) {
+      if( !match("if") )
+        expect_keep("{");
+
+      node_append(node, p_stmt());
+    }
+    else
+      node_append(node, NULL);
+  }
+
+  // expr
+  else {
+    node = p_expr();
+    expect(";");
+  }
+
+  return node;
+}
+
 node_t*  parser_parse(source_t* src, token_t* toklist) {
   ctx = parser_new(src, toklist);
 
-  return p_expr();
+  node_t* nd = node_new(ND_PROGRAM);
+
+  while( check() ) {
+    node_append(nd, p_stmt());
+  }
+
+  return nd;
 }

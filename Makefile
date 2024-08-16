@@ -10,7 +10,8 @@ CC			:=	gcc
 
 IGNORE_WARN	:=	\
 	-Wno-switch -Wno-unused-but-set-variable \
-	-Wno-unused-parameter -Wno-unused-function
+	-Wno-unused-parameter -Wno-unused-function \
+	-Wno-unused-variable
 
 OPTI		?=	-O0 -g -D_METRO_DEBUG_
 COMMON		:=	$(OPTI) -Wall -Wextra $(IGNORE_WARN) $(INCLUDES)

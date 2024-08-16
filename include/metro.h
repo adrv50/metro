@@ -4,11 +4,10 @@
 #include "types.h"
 #include "lexer.h"
 #include "parser.h"
+#include "compile.h"
 #include "node.h"
 
-typedef uint16_t  mt_err_kind_t;
-
-enum {
+typedef enum {
   // unknown character on source code
   ERR_INVALID_TOKEN,
 
@@ -18,7 +17,11 @@ enum {
   // parser: unexpected token
   ERR_UNEXPECTED_TOKEN,
 
-};
+  // parser: brackets is not closed
+  ERR_NOT_CLOSED_BRACKETS,
+
+
+} mt_err_kind_t;
 
 typedef struct mt_error mt_error;
 struct mt_error {

@@ -26,6 +26,12 @@ struct token_t {
   size_t        pos;
   source_t*     src;
 
+  union {
+    int     val;
+    char    val_c;
+    float   val_f;
+  };
+
 };
 
 token_t*
