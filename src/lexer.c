@@ -84,15 +84,19 @@ source_t* source_new(char* path) {
   s->path = path;
 
   fseek(fp, 0, SEEK_END);
-  s->length = ftell(fp);
-  s->size = s->length + 1;
+  s->length = s->size = ftell(fp);
 
-  s->data = malloc(s->size);
+  s->data = malloc(s->size + 2);
 
   fseek(fp, 0, SEEK_SET);
-  fread(s->data, s->size, 1, fp);
 
-  s->data[s->size - 1] = 0;
+  if( fread(s->data, s->size, 1, fp) != 1 )
+    abort();
+
+  if( s->size == 0 || s->data[s->size - 1] != '\n' )
+    s->data[s->size++] = '\n';
+
+  s->data[s->size] = 0;
 
   fclose(fp);
 
@@ -121,31 +125,50 @@ void lexer_free(mtlexer* lx) {
   free(lx);
 }
 
-static bool lexer_check(mtlexer* lx) {
+static bool lx_check(mtlexer* lx) {
   return lx->position < lx->length;
 }
 
-static char lexer_peek(mtlexer* lx) {
-  return lexer_check(lx) ? lx->src->data[lx->position] : 0;
+static char lx_peek(mtlexer* lx) {
+  return lx_check(lx) ? lx->src->data[lx->position] : 0;
 }
 
-static char* lexer_cur_ptr(mtlexer* lx) {
+static char* lx_cur_ptr(mtlexer* lx) {
   return lx->src->data + lx->position;
 }
 
-static void lexer_pass_space(mtlexer* lx) {
-  while( lexer_check(lx) && isspace(lexer_peek(lx)) )
+static void lx_pass_space(mtlexer* lx) {
+  while( lx_check(lx) && isspace(lx_peek(lx)) )
     lx->position++;
 }
 
-static bool lexer_match(mtlexer* lx, char* str, size_t len) {
-  return lx->position + len <= lx->length && strncmp(lexer_cur_ptr(lx), str, len) == 0;
+static bool lx_match(mtlexer* lx, char* str, size_t len) {
+  return lx->position + len <= lx->length
+    && strncmp(lx_cur_ptr(lx), str, len) == 0;
+}
+
+static bool lx_eatstr(mtlexer* lx, char* str, size_t len) {
+  if( lx_match(lx, str, len) ) {
+    lx->position += len;
+    return true;
+  }
+
+  return false;
+}
+
+static bool lx_eat(mtlexer* lx, char c) {
+  if( lx_peek(lx) == c ) {
+    lx->position++;
+    return true;
+  }
+
+  return false;
 }
 
 //
 // skip all characters within any ranges
 //
-static size_t lexer_pass(mtlexer* lx, char* ranges) {
+static size_t lx_pass(mtlexer* lx, char* ranges) {
   size_t pattern_count = strlen(ranges);
   size_t passed = 0;
 
@@ -154,8 +177,8 @@ static size_t lexer_pass(mtlexer* lx, char* ranges) {
 
   pattern_count /= 2;
 
-  while( lexer_check(lx) ) {
-    char c = lexer_peek(lx);
+  while( lx_check(lx) ) {
+    char c = lx_peek(lx);
 
     for( size_t i = 0; i < pattern_count; i++ ) {
       if( ranges[i * 2] <= c && c <= ranges[i * 2 + 1] )
@@ -172,20 +195,11 @@ static size_t lexer_pass(mtlexer* lx, char* ranges) {
   return passed;
 }
 
-static bool lexer_eat(mtlexer* lx, char c) {
-  if( lexer_peek(lx) == c ) {
-    lx->position++;
-    return true;
-  }
-
-  return false;
-}
-
-static token_t* lexer_eat_punctuater(mtlexer* lx, token_t* prev) {
+static token_t* lx_eat_punctuater(mtlexer* lx, token_t* prev) {
   for( size_t i = 0; i < punctuaters_size; i++ ) {
     size_t len = strlen(punctuaters[i]);
 
-    if( lexer_match(lx, punctuaters[i], len) ) {
+    if( lx_match(lx, punctuaters[i], len) ) {
       token_t* tok = token_new(TOK_PUNCTUATER, prev, punctuaters[i], len, lx->position);
 
       lx->position += len;
@@ -201,21 +215,33 @@ token_t* lexer_lex(mtlexer* lx) {
   token_t   top = { };
   token_t*  cur = &top;
 
-  lexer_pass_space(lx);
+  lx_pass_space(lx);
 
-  while( lexer_check(lx) ) {
-    char    c     = lexer_peek(lx);
-    char*   str   = lexer_cur_ptr(lx);
+  while( lx_check(lx) ) {
+    char    c     = lx_peek(lx);
+    char*   str   = lx_cur_ptr(lx);
     size_t  pos   = lx->position;
 
+    // comment line
+    if( lx_eatstr(lx, "//", 2) ) {
+      while( lx_check(lx) && lx_peek(lx) != '\n' )
+        lx->position++;
+    }
+
+    // comment block
+    else if( lx_eatstr(lx, "/*", 2) ) {
+      while( lx_check(lx) && !lx_eatstr(lx, "*/", 2) )
+        lx->position++;
+    }
+
     // int or float
-    if( isdigit(c) ) {
-      cur = token_new(TOK_INT, cur, str, lexer_pass(lx, "09"), pos);
+    else if( isdigit(c) ) {
+      cur = token_new(TOK_INT, cur, str, lx_pass(lx, "09"), pos);
 
       // float
-      if( lexer_eat(lx, '.') ) {
+      if( lx_eat(lx, '.') ) {
         cur->kind = TOK_FLOAT;
-        cur->len += lexer_pass(lx, "09") + lexer_eat(lx, 'f') + 1;
+        cur->len += lx_pass(lx, "09") + lx_eat(lx, 'f') + 1;
 
         cur->val_f = atof(str);
       }
@@ -226,10 +252,10 @@ token_t* lexer_lex(mtlexer* lx) {
     }
 
     // char
-    else if( lexer_eat(lx, '\'') ) {
+    else if( lx_eat(lx, '\'') ) {
       bool closed;
 
-      while( !(closed = lexer_peek(lx) == '\'') )
+      while( !(closed = lx_peek(lx) == '\'') )
         lx->position++;
 
       if( !closed ) {
@@ -238,10 +264,10 @@ token_t* lexer_lex(mtlexer* lx) {
     }
 
     // string
-    else if( lexer_eat(lx, '"') ) {
+    else if( lx_eat(lx, '"') ) {
       bool closed;
 
-      while( !(closed = lexer_eat(lx, '"')) )
+      while( !(closed = lx_eat(lx, '"')) )
         lx->position++;
 
       if( !closed ) {
@@ -251,15 +277,16 @@ token_t* lexer_lex(mtlexer* lx) {
 
     // identifier
     else if( c == '_' || isalpha(c) ) {
-      cur = token_new(TOK_IDENTIFIER, cur, str, lexer_pass(lx, "__09azAZ"), pos);
+      cur = token_new(
+        TOK_IDENTIFIER, cur, str, lx_pass(lx, "__09azAZ"), pos);
     }
 
     // punctuater
-    else if( !(cur = lexer_eat_punctuater(lx, cur)) ) {
+    else if( !(cur = lx_eat_punctuater(lx, cur)) ) {
       mt_abort_with(mt_new_error(ERR_INVALID_TOKEN, "invalid token", pos));
     }
 
-    lexer_pass_space(lx);
+    lx_pass_space(lx);
   }
 
   token_new(TOK_END, cur, NULL, 0, 0);

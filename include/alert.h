@@ -33,8 +33,8 @@
   #define alertmsg(msg)         printf("\t%s:%u\talertmsg " COL_BK_BLACK COL_WHITE #msg COL_DEFAULT, strrchr(__FILE__, '/') + 1, __LINE__)
   #define alertfmt(fmt, e...)   printf("\t%s:%u\talertfmt " COL_BK_BLACK COL_WHITE fmt COL_DEFAULT, strrchr(__FILE__, '/') + 1, __LINE__, e)
 
-  #define todo_impl             alertmsg(not implemented)
-  #define panic                 alertmsg(panic!)
+  #define todo_impl             (alertmsg(not implemented), exit(1))
+  #define panic                 (alertmsg(panic!), exit(1))
 
 #else
   #define debug(...)      ;
