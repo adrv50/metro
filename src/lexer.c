@@ -146,18 +146,18 @@ static bool lexer_match(mtlexer* lx, char* str, size_t len) {
 // skip all characters within any ranges
 //
 static size_t lexer_pass(mtlexer* lx, char* ranges) {
-  size_t count = strlen(ranges);
+  size_t pattern_count = strlen(ranges);
   size_t passed = 0;
 
-  assert(count >= 2);
-  assert(count % 2 == 0);
+  assert(pattern_count >= 2);
+  assert(pattern_count % 2 == 0);
 
-  count /= 2;
+  pattern_count /= 2;
 
   while( lexer_check(lx) ) {
     char c = lexer_peek(lx);
 
-    for( size_t i = 0; i < count; i++ ) {
+    for( size_t i = 0; i < pattern_count; i++ ) {
       if( ranges[i * 2] <= c && c <= ranges[i * 2 + 1] )
         goto _label_continue;
     }
@@ -255,6 +255,8 @@ token_t* lexer_lex(mtlexer* lx) {
 
     lexer_pass_space(lx);
   }
+
+  token_new(TOK_END, cur, NULL, 0, 0);
 
   // set source pointer
   for( token_t* t = top.next; t && t->next; t = t->next )

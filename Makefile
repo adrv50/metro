@@ -1,4 +1,4 @@
-TARGET		?= 	metrocc
+TARGET		?= 	mcc
 DBGPREFIX	?=	d
 
 TOPDIR		?= 	$(CURDIR)
@@ -8,11 +8,14 @@ SOURCE		:= 	src
 
 CC			:=	gcc
 
+IGNORE_WARN	:=	\
+	-Wno-switch -Wno-unused-but-set-variable \
+	-Wno-unused-parameter -Wno-unused-function
+
 OPTI		?=	-O0 -g -D_METRO_DEBUG_
-COMMON		:=	$(OPTI) -Wall -Wextra -Wno-switch $(INCLUDES)
+COMMON		:=	$(OPTI) -Wall -Wextra $(IGNORE_WARN) $(INCLUDES)
 CFLAGS		:=	$(COMMON) -std=c17
 LDFLAGS		:=
-LIB			:=	-lmetro
 
 %.o: %.c
 	@echo $(notdir $<)

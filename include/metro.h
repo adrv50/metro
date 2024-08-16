@@ -44,7 +44,7 @@ mt_new_error_from_node(mt_err_kind_t kind, char const* msg, node_t* node);
 void  mt_error_emit(mt_error* err);
 
 // emit error and exit.
-void  mt_abort_with(mt_error* err);
+void  mt_abort_with(mt_error* err) __attribute__((__noreturn__));
 
 typedef struct mtdriver mtdriver;
 struct mtdriver {

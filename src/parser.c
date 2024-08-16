@@ -33,6 +33,10 @@ static token_t* getcur() {
   return ctx.cur;
 }
 
+static bool check() {
+  return getcur()->kind != TOK_END;
+}
+
 static void save() {
   saved = getcur();
 }
@@ -42,9 +46,9 @@ static void next() {
 }
 
 static bool eat(char const* str) {
-  int len = strlen(str);
+  size_t len = strlen(str);
 
-  if( getcur()->len >= len && strncmp(str, getcur()->len, len) == 0 ) {
+  if( getcur()->len >= len && strncmp(str, getcur()->str, len) == 0 ) {
     next();
     return true;
   }
@@ -54,24 +58,78 @@ static bool eat(char const* str) {
 
 static void expect(char const* str) {
   if( !eat(str) ) {
-    
+    mt_abort_with(mt_new_error_from_token(
+      ERR_UNEXPECTED_TOKEN, "unexpected token", getcur()));
   }
 }
 
 static node_t* p_factor() {
-  
+  token_t* tok = getcur();
+  node_t* node;
+
+  next();
+
+  switch( tok->kind ) {
+    case TOK_INT:
+    case TOK_FLOAT:
+    case TOK_CHAR:
+    case TOK_STRING:
+      node = node_new_with_token(ND_VALUE, tok);
+      break;
+
+    case TOK_IDENTIFIER:
+      node = node_new_with_token(ND_VARIABLE, tok);
+
+      // todo: parse arguments if ate "("
+
+      break;
+
+    default:
+      mt_abort_with(mt_new_error_from_token(
+        ERR_INVALID_SYNTAX, "invalid syntax", tok));
+  }
+
+  return node;
 }
 
 static node_t* p_mul() {
+  node_t* x = p_factor();
+  token_t* tok;
 
+  while( check() ) {
+    tok = getcur();
+
+    if( eat("*") )
+      x = node_new_with_lr(ND_MUL, tok, x, p_factor());
+    else if( eat("/") )
+      x = node_new_with_lr(ND_DIV, tok, x, p_factor());
+    else
+      break;
+  }
+
+  return x;
 }
 
 static node_t* p_add() {
+  node_t* x = p_mul();
+  token_t* tok;
 
+  while( check() ) {
+    tok = getcur();
+
+    if( eat("+") )
+      x = node_new_with_lr(ND_ADD, tok, x, p_mul());
+    else if( eat("-") )
+      x = node_new_with_lr(ND_SUB, tok, x, p_mul());
+    else
+      break;
+  }
+
+  return x;
 }
 
 static node_t* p_expr() {
-
+  return p_add();
 }
 
 node_t*  parser_parse(source_t* src, token_t* toklist) {

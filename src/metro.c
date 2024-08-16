@@ -131,16 +131,14 @@ static void test1() {
 void print_token(token_t* tok) {
   printf("{ ");
 
-  while( tok ) {
+  while( tok && tok->kind != TOK_END ) {
     printf("%.*s ", (int)tok->len, tok->str);
 
     if( tok->next )
       tok = tok->next;
-    else {
-      printf("}\n");
-      break;
-    }
   }
+
+  printf("}\n");
 }
 
 int driver_main(mtdriver* dr, int argc, char** argv) {
@@ -154,7 +152,7 @@ int driver_main(mtdriver* dr, int argc, char** argv) {
 
   token_t* tok = lexer_lex(dr->lexer);
 
-  mt_abort_with(mt_new_error_from_token(ERR_INVALID_TOKEN, "test error", tok));
+  // mt_abort_with(mt_new_error_from_token(ERR_INVALID_TOKEN, "test error", tok));
 
   print_token(tok);
 

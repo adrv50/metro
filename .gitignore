@@ -3,8 +3,8 @@
 /memo
 
 # Binary files
-metrocc
-metroccd
+mcc
+mccd
 
 # other
 *.o

@@ -10,6 +10,11 @@
         "object.h": "c",
         "typeinfo.h": "c",
         "types.h": "c",
-        "lexer.h": "c"
+        "lexer.h": "c",
+        "stdio.h": "c",
+        "alert.h": "c",
+        "bitset": "c",
+        "chrono": "c",
+        "algorithm": "c"
     }
 }
