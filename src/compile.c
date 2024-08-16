@@ -24,6 +24,9 @@ static void compile(node_t* node) {
   static int label_num = 0;
 
   int label = label_num;
+  int label2 = 0;
+
+  node_t* temp;
 
   if( !node )
     return;
@@ -42,12 +45,26 @@ static void compile(node_t* node) {
     case ND_IF: {
       label_num++;
 
+      temp = nd_if_false(node);
+
       compile(nd_if_cond(node));
-
       emit("cmp r%d, #0", reg);
-      emit("beq _label_%d", label);
 
-      compile(nd_if_true(node));
+      if( temp ) {
+        label2 = label_num++;
+
+        emit("bne _label_%d", label2);
+
+        compile(nd_if_false(node));
+        emit("b _label_%d:", label);
+        
+        emit("_label_%d:", label2);
+        compile(nd_if_true(node));
+      }
+      else {
+        emit("beq _label_%d", label);
+        compile(nd_if_true(node));
+      }
 
       emit("_label_%d:", label);
 

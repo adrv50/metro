@@ -111,7 +111,7 @@ mtlexer* lexer_new(source_t* src) {
   lexer->position   = 0;
   lexer->length     = lexer->src->length;
 
-  alertfmt("%s\n", lexer->src->data);
+  // alertfmt("%s\n", lexer->src->data);
 
   return lexer;
 }

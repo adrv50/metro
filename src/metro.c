@@ -154,7 +154,7 @@ int driver_main(mtdriver* dr, int argc, char** argv) {
 
   // mt_abort_with(mt_new_error_from_token(ERR_INVALID_TOKEN, "test error", tok));
 
-  print_token(tok);
+  // print_token(tok);
 
   node_t* nd = parser_parse(dr->source, tok);
 
