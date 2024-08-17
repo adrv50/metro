@@ -1,4 +1,5 @@
 #include <string.h>
+#include <assert.h>
 #include "parser.h"
 #include "lexer.h"
 #include "metro.h"
@@ -66,6 +67,12 @@ static void expect_keep(char const* str) {
 static void expect(char const* str) {
   expect_keep(str);
   next();
+}
+
+static node_t* p_stmt();
+static node_t* expect_block() {
+  expect_keep("{");
+  return p_stmt();
 }
 
 static token_t* expect_identifier() {
@@ -242,11 +249,44 @@ static node_t* p_top() {
   //
   //  param :=  <name: ident> ":" <type: typename>
   //
+  //  /* node->child = params */
+  //
   else if( eat("fn") ) {
     node_t* func = node_new_with_token(ND_FUNCTION, tok);
 
-    
+    tok = expect_identifier();
 
+    func->name = tok->str;
+    func->len  = tok->len;
+
+    node_t** rettype = node_append(func, NULL);
+    node_t** block = node_append(func, NULL);
+
+    expect("(");
+
+    if( !eat(")") ) {
+      do {
+        node_t* param = *node_append(
+          func, node_new_with_token(ND_PARAM, expect_identifier()));
+
+        expect(":");
+
+        node_append(param, expect_typename());
+      } while( eat(",") );
+
+      expect(")");
+    }
+
+    if( eat("->") ) {
+      *rettype = expect_typename();
+    }
+
+    *block = expect_block();
+
+    assert(func->child->count >= 2);
+    assert(*block != NULL);
+
+    return func;
   }
 
   return p_stmt();

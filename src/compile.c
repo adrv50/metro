@@ -32,6 +32,10 @@ static void compile(node_t* node) {
     return;
 
   switch( node->kind ) {
+    case ND_ENUM:
+    case ND_STRUCT:
+      return;
+
     case ND_VALUE: {
       switch( node->tok->kind ) {
         case TOK_INT:
@@ -74,6 +78,16 @@ static void compile(node_t* node) {
     case ND_BLOCK: {
       for( size_t i = 0; i < node->child->count; i++ )
         compile(nd_get_child(node, i));
+
+      return;
+    }
+    
+    case ND_FUNCTION: {
+      emit(".function");
+      emit("%.*s:", (int)node->len, node->name);
+
+      compile(nd_get_child(node, 1));
+      emit("ret");
 
       return;
     }

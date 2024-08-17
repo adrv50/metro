@@ -5,12 +5,17 @@
 
 #define   nd_get_child(_ND, _INDEX)    (vector_get_as(node_t*, (_ND)->child, _INDEX))
 
-#define   nd_lhs(_ND)       nd_get_child(_ND, 0)
-#define   nd_rhs(_ND)       nd_get_child(_ND, 1)
+#define   nd_lhs(_ND)         nd_get_child(_ND, 0)
+#define   nd_rhs(_ND)         nd_get_child(_ND, 1)
 
-#define   nd_if_cond(n)     nd_get_child(n, 0)
-#define   nd_if_true(n)     nd_get_child(n, 1)
-#define   nd_if_false(n)    nd_get_child(n, 2)
+#define   nd_if_cond(n)       nd_get_child(n, 0)
+#define   nd_if_true(n)       nd_get_child(n, 1)
+#define   nd_if_false(n)      nd_get_child(n, 2)
+
+#define   nd_func_rettype(n)        nd_get_child(n, 0)
+#define   nd_func_block(n)          nd_get_child(n, 1)
+#define   nd_func_param_count(n)    (n->child->count - 2)
+#define   nd_func_param(n, _i)      nd_get_child(n, _i + 2)
 
 typedef u16  node_kind_t;
 
@@ -36,7 +41,14 @@ enum {
   ND_FOR,
   ND_WHILE,
 
+  // child = { type }
+  ND_PARAM,
+
+  // child = { ret_type, params... }
   ND_FUNCTION,
+
+  ND_ENUM,
+  ND_STRUCT,
 
   ND_PROGRAM,   // (root)
 
