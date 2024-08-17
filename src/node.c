@@ -1,37 +1,36 @@
 #include <stdio.h>
 #include <string.h>
+
 #include "alert.h"
 #include "node.h"
 
-node_t*  node_new(node_kind_t kind) {
+node_t* node_new(node_kind_t kind) {
   return node_new_with_lr(kind, NULL, NULL, NULL);
 }
 
-node_t*  node_new_with_token(node_kind_t kind, token_t* tok) {
+node_t* node_new_with_token(node_kind_t kind, token_t* tok) {
   return node_new_with_lr(kind, tok, NULL, NULL);
 }
 
-node_t*  node_new_with_lr(node_kind_t kind, token_t* tok, node_t* lhs, node_t* rhs) {
+node_t* node_new_with_lr(node_kind_t kind, token_t* tok, node_t* lhs,
+                         node_t* rhs) {
   node_t* nd = calloc(1, sizeof(node_t));
 
-  nd->kind    = kind;
-  nd->tok     = tok;
-  nd->child   = vector_new(sizeof(node_t*));
+  nd->kind = kind;
+  nd->tok = tok;
+  nd->child = vector_new(sizeof(node_t*));
 
-  if( lhs )
-    node_append(nd, lhs);
+  if (lhs) node_append(nd, lhs);
 
-  if( rhs )
-    node_append(nd, rhs);
+  if (rhs) node_append(nd, rhs);
 
   return nd;
 }
 
 void node_free(node_t* node) {
-  if( !node )
-    return;
+  if (!node) return;
 
-  for( size_t i = 0; i < node->child->count; i++ ) {
+  for (size_t i = 0; i < node->child->count; i++) {
     node_free(*(node_t**)vector_get(node->child, i));
   }
 
@@ -50,7 +49,7 @@ bool node_is_same_name(node_t* node, char const* name) {
 }
 
 void print_node(node_t* node) {
-  switch( node->kind ) {
+  switch (node->kind) {
     case ND_VALUE:
     case ND_VARIABLE:
       printf("%.*s", (int)node->tok->len, node->tok->str);
@@ -66,7 +65,7 @@ void print_node(node_t* node) {
       break;
 
     case ND_PROGRAM:
-      for( size_t i = 0; i < node->child->count; i++ ) {
+      for (size_t i = 0; i < node->child->count; i++) {
         print_node(nd_get_child(node, i));
         puts("");
       }

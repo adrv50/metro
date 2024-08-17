@@ -1,17 +1,17 @@
-#include <string.h>
-#include <stdarg.h>
 #include <assert.h>
+#include <stdarg.h>
+#include <string.h>
 
 #include "alert.h"
 #include "compile.h"
 
-static vector*  datalist;
+static vector* datalist;
 
 static void emit(char const* fmt, ...) {
   static char buf[0x100];
 
   va_list ap;
-  
+
   va_start(ap, fmt);
   vsprintf(buf, fmt, ap);
   va_end(ap);
@@ -28,16 +28,15 @@ static void compile(node_t* node) {
 
   node_t* temp;
 
-  if( !node )
-    return;
+  if (!node) return;
 
-  switch( node->kind ) {
+  switch (node->kind) {
     case ND_ENUM:
     case ND_STRUCT:
       return;
 
     case ND_VALUE: {
-      switch( node->tok->kind ) {
+      switch (node->tok->kind) {
         case TOK_INT:
           emit("mov r%d, #%d", reg, node->tok->val);
           break;
@@ -54,18 +53,17 @@ static void compile(node_t* node) {
       compile(nd_if_cond(node));
       emit("cmp r%d, #0", reg);
 
-      if( temp ) {
+      if (temp) {
         label2 = label_num++;
 
         emit("bne _label_%d", label2);
 
         compile(nd_if_false(node));
         emit("b _label_%d:", label);
-        
+
         emit("_label_%d:", label2);
         compile(nd_if_true(node));
-      }
-      else {
+      } else {
         emit("beq _label_%d", label);
         compile(nd_if_true(node));
       }
@@ -76,12 +74,12 @@ static void compile(node_t* node) {
     }
 
     case ND_BLOCK: {
-      for( size_t i = 0; i < node->child->count; i++ )
+      for (size_t i = 0; i < node->child->count; i++)
         compile(nd_get_child(node, i));
 
       return;
     }
-    
+
     case ND_FUNCTION: {
       emit(".function");
       emit("%.*s:", (int)node->len, node->name);
@@ -100,7 +98,7 @@ static void compile(node_t* node) {
 
   reg--;
 
-  switch( node->kind ) {
+  switch (node->kind) {
     case ND_ADD:
       emit("add r%d, r%d", reg, reg + 1);
       break;
@@ -124,11 +122,11 @@ static void compile(node_t* node) {
 }
 
 asm_operand_t make_asm_op(asm_op_kind_t kind, int rdest, int rsrc) {
-  asm_operand_t op = { 0 };
+  asm_operand_t op = {0};
 
-  op.kind   = kind;
-  op.rdest  = rdest;
-  op.rsrc   = rsrc;
+  op.kind = kind;
+  op.rdest = rdest;
+  op.rsrc = rsrc;
 
   return op;
 }
@@ -136,6 +134,6 @@ asm_operand_t make_asm_op(asm_op_kind_t kind, int rdest, int rsrc) {
 void compiler_compile_full(node_t* node) {
   assert(node->kind == ND_PROGRAM);
 
-  for( size_t i = 0; i < node->child->count; i++ )
+  for (size_t i = 0; i < node->child->count; i++)
     compile(nd_get_child(node, i));
 }
