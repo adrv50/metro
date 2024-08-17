@@ -15,6 +15,8 @@
 typedef u16  node_kind_t;
 
 enum {
+  ND_TYPENAME,
+
   ND_VALUE,
   ND_VARIABLE,
 
@@ -49,6 +51,9 @@ struct node_t {
 
   char*   name;
   size_t  len;
+
+  // flag when self is ND_TYPENAME
+  bool  type_is_const;
  
 };
 

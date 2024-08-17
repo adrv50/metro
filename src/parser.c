@@ -27,7 +27,6 @@ parser_ctx parser_new(source_t* src, token_t* list) {
 }
 
 static parser_ctx     ctx;
-static token_t*       saved;
 
 static token_t* getcur() {
   return ctx.cur;
@@ -35,10 +34,6 @@ static token_t* getcur() {
 
 static bool check() {
   return getcur()->kind != TOK_END;
-}
-
-static void save() {
-  saved = getcur();
 }
 
 static void next() {
@@ -71,6 +66,31 @@ static void expect_keep(char const* str) {
 static void expect(char const* str) {
   expect_keep(str);
   next();
+}
+
+static token_t* expect_identifier() {
+  token_t* tok = getcur();
+
+  if( tok->kind != TOK_IDENTIFIER ) {
+    mt_abort_with(mt_new_error_from_token(
+      ERR_UNEXPECTED_TOKEN, "expected identifier", tok));
+  }
+
+  next();
+  return tok;
+}
+
+static node_t* expect_typename() {
+  node_t* node = node_new(ND_TYPENAME);
+
+  node->tok   = expect_identifier();
+
+  node->name  = node->tok->str;
+  node->len   = node->tok->len;
+
+  node->type_is_const = eat("const");
+
+  return node;
 }
 
 static node_t* p_factor() {
@@ -194,13 +214,51 @@ static node_t* p_stmt() {
   return node;
 }
 
+static node_t* p_top() {
+  token_t* tok = getcur();
+
+  //
+  //  enum    :=  "enum" <name: ident> "{"
+  //              <name: ident> ("(" <type: typename> ")")? ","
+  //              "}"
+  //
+  if( eat("enum") ) {
+    todo_impl;
+  }
+
+  //
+  //  struct  :=  "struct" <name: ident> "{"
+  //              (<name: ident> ":" <type: typename>)*
+  //              "}"
+  //
+  else if( eat("struct")) {
+    todo_impl;
+  }
+
+  //
+  //  func  :=  "fn" <name: ident>
+  //            "(" param ("," param)* ")" ("->" <type: typename>)?
+  //            block
+  //
+  //  param :=  <name: ident> ":" <type: typename>
+  //
+  else if( eat("fn") ) {
+    node_t* func = node_new_with_token(ND_FUNCTION, tok);
+
+    
+
+  }
+
+  return p_stmt();
+}
+
 node_t*  parser_parse(source_t* src, token_t* toklist) {
   ctx = parser_new(src, toklist);
 
   node_t* nd = node_new(ND_PROGRAM);
 
   while( check() ) {
-    node_append(nd, p_stmt());
+    node_append(nd, p_top());
   }
 
   return nd;
