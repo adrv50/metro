@@ -6,11 +6,11 @@
 
 typedef struct mtlexer mtlexer;
 struct mtlexer {
-  source_t*   src;
-  size_t      position;
-  size_t      length;
+  source_t* src;
+  size_t position;
+  size_t length;
 };
 
-mtlexer*    lexer_new(source_t* src);
-void        lexer_free(mtlexer* lx);
-token_t*    lexer_lex(mtlexer* lx);
+mtlexer* lexer_new(source_t* src);
+void lexer_free(mtlexer* lx);
+token_t* lexer_lex(mtlexer* lx);

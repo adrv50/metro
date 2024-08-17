@@ -3,7 +3,7 @@
 #include "types.h"
 #include "source.h"
 
-typedef u16   token_kind_t;
+typedef u16 token_kind_t;
 
 enum {
   TOK_INT,
@@ -18,21 +18,20 @@ enum {
 
 typedef struct token_t token_t;
 struct token_t {
-  token_kind_t  kind;
-  token_t*      prev;
-  token_t*      next;
-  char*         str;
-  size_t        len;
-  size_t        pos;
-  source_t*     src;
+  token_kind_t kind;
+  token_t* prev;
+  token_t* next;
+  char* str;
+  size_t len;
+  size_t pos;
+  source_t* src;
 
   union {
-    int     val;
-    char    val_c;
-    float   val_f;
+    int val;
+    char val_c;
+    float val_f;
   };
-
 };
 
-token_t*
-token_new(token_kind_t kind, token_t* prev, char* str, size_t len, size_t pos);
+token_t* token_new(token_kind_t kind, token_t* prev, char* str, size_t len,
+                   size_t pos);

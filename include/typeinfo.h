@@ -13,12 +13,11 @@ enum {
   TYPE_VECTOR,
 };
 
-typedef u8  type_kind;
+typedef u8 type_kind;
 
 typedef struct {
-  type_kind   kind;
-  vector*     params;
+  type_kind kind;
+  vector* params;
 } mt_type_info_t;
 
-
-mt_type_info_t  make_typeinfo(type_kind kind);
+mt_type_info_t make_typeinfo(type_kind kind);

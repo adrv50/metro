@@ -4,10 +4,10 @@
 
 typedef struct source_t source_t;
 struct source_t {
-  char*     path;
-  char*     data;
-  size_t    size;     // size of actual data 
-  size_t    length;
+  char* path;
+  char* data;
+  size_t size;  // size of actual data
+  size_t length;
 };
 
 //
