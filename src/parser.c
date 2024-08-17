@@ -181,6 +181,20 @@ static node_t* p_stmt() {
                                             "not closed", token));
   }
 
+  //
+  //  let: variable declaration
+  //
+  //  syntax:
+  //    let a : type = value;
+  //
+  //  layout:
+  //    name, len     --->  a
+  //    child[0]      --->  type
+  //    child[1]      --->  value   or null
+  //
+  else if (eat("let")) {
+  }
+
   // if
   else if (eat("if")) {
     node = node_new(ND_IF);
@@ -232,13 +246,17 @@ static node_t* p_top() {
   }
 
   //
-  //  func  :=  "fn" <name: ident>
-  //            "(" param ("," param)* ")" ("->" <type: typename>)?
-  //            block
+  //  fn: function definition
   //
-  //  param :=  <name: ident> ":" <type: typename>
+  //  syntax:
+  //    "fn" <name: ident>
+  //      "(" params... ")" ("->" <rettype: type>)? <block>
   //
-  //  /* node->child = params */
+  //  layout:
+  //    name, len     = name
+  //    child[0]      = return type
+  //    child[1]      = block
+  //    child[2 <=]   = params
   //
   else if (eat("fn")) {
     node_t* func = node_new_with_token(ND_FUNCTION, tok);

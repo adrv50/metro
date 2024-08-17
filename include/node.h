@@ -16,7 +16,7 @@
 #define nd_func_rettype(n) nd_get_child(n, 0)
 #define nd_func_block(n) nd_get_child(n, 1)
 #define nd_func_param_count(n) (n->child->count - 2)
-#define nd_func_param(n, _i) nd_get_child(n, _i + 2)
+#define nd_func_get_param(n, _i) nd_get_child(n, _i + 2)
 
 typedef u16 node_kind_t;
 
@@ -44,13 +44,20 @@ enum {
 
   ND_ASSIGN,  // =
 
-  ND_VARDEF,  // let
+  // vardef :=  "let" <name: ident> ":" <type> ("=" <expr>)?
+  ND_VARDEF,
 
-  ND_BLOCK,  // { ... }
+  // block  := "{" stmt* "}"
+  ND_BLOCK,
 
-  ND_IF,     // "if" <expr> <block> ("else" (<if> | <block>))?
-  ND_FOR,    // "for" <ident> "in" <iterable> <block>
-  ND_WHILE,  // "while" <cond: expr> <block>
+  // if     :=  "if" <expr> <block> ("else" (<if> | <block>))?
+  ND_IF,
+
+  // for    :=  "for" <ident> "in" <iterable> <block>
+  ND_FOR,
+
+  // while  :=  "while" <cond: expr> <block>
+  ND_WHILE,
 
   // child = { type }
   ND_PARAM,  // <name: ident> ":" <type>
