@@ -16,6 +16,7 @@
         "bitset": "c",
         "chrono": "c",
         "algorithm": "c",
-        "compile.h": "c"
+        "compile.h": "c",
+        "errno.h": "c"
     }
 }

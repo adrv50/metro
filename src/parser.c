@@ -19,7 +19,8 @@ parser_ctx parser_new(source_t* src, token_t* list) {
   ctx.endtok = list;
   ctx.cur = list;
 
-  while (ctx.endtok && ctx.endtok->next) ctx.endtok = ctx.endtok->next;
+  while (ctx.endtok && ctx.endtok->next)
+    ctx.endtok = ctx.endtok->next;
 
   return ctx;
 }
@@ -35,7 +36,8 @@ static void next() { ctx.cur = ctx.cur->next; }
 static bool match(char const* str) {
   size_t len = strlen(str);
 
-  return getcur()->len >= len && strncmp(str, getcur()->str, len) == 0;
+  return getcur()->len >= len &&
+         strncmp(str, getcur()->str, len) == 0;
 }
 
 static bool eat(char const* str) {
@@ -49,8 +51,8 @@ static bool eat(char const* str) {
 
 static void expect_keep(char const* str) {
   if (!match(str)) {
-    mt_abort_with(mt_new_error_from_token(ERR_UNEXPECTED_TOKEN,
-                                          "unexpected token", getcur()));
+    mt_abort_with(mt_new_error_from_token(
+        ERR_UNEXPECTED_TOKEN, "unexpected token", getcur()));
   }
 }
 
@@ -69,8 +71,8 @@ static token_t* expect_identifier() {
   token_t* tok = getcur();
 
   if (tok->kind != TOK_IDENTIFIER) {
-    mt_abort_with(mt_new_error_from_token(ERR_UNEXPECTED_TOKEN,
-                                          "expected identifier", tok));
+    mt_abort_with(mt_new_error_from_token(
+        ERR_UNEXPECTED_TOKEN, "expected identifier", tok));
   }
 
   next();
@@ -113,8 +115,8 @@ static node_t* p_factor() {
       break;
 
     default:
-      mt_abort_with(
-          mt_new_error_from_token(ERR_INVALID_SYNTAX, "invalid syntax", tok));
+      mt_abort_with(mt_new_error_from_token(ERR_INVALID_SYNTAX,
+                                            "invalid syntax", tok));
   }
 
   return node;

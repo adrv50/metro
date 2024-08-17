@@ -5,7 +5,7 @@
 #include "alert.h"
 #include "compile.h"
 
-static vector* datalist;
+static vector* datalist;  // .data
 
 static void emit(char const* fmt, ...) {
   static char buf[0x100];
