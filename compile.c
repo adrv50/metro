@@ -5,7 +5,35 @@
 #include "alert.h"
 #include "compile.h"
 
-static vector* datalist;  // .data
+typedef struct {
+  char const* name;
+  asm_op_kind_t kind;
+} op_name_and_kind;
+
+static vector* codelist;  // vector<asm_operand>
+
+static const op_name_and_kind op_name_kind_table[] = {
+    {"mov", ASM_MOV},
+    {"cmp", ASM_CMP},
+};
+
+asm_operand make_asm_op(asm_op_kind_t kind, int rdest, int rsrc) {
+  asm_operand op = {0};
+
+  op.kind = kind;
+  op.rdest = rdest;
+  op.rsrc = rsrc;
+
+  return op;
+}
+
+static void compile(node_t* node);
+void compiler_compile_full(node_t* node) {
+  assert(node->kind == ND_PROGRAM);
+
+  for (size_t i = 0; i < node->child->count; i++)
+    compile(nd_get_child(node, i));
+}
 
 static void emit(char const* fmt, ...) {
   static char buf[0x100];
@@ -119,21 +147,4 @@ static void compile(node_t* node) {
       alertfmt("%d", node->kind);
       todo_impl;
   }
-}
-
-asm_operand_t make_asm_op(asm_op_kind_t kind, int rdest, int rsrc) {
-  asm_operand_t op = {0};
-
-  op.kind = kind;
-  op.rdest = rdest;
-  op.rsrc = rsrc;
-
-  return op;
-}
-
-void compiler_compile_full(node_t* node) {
-  assert(node->kind == ND_PROGRAM);
-
-  for (size_t i = 0; i < node->child->count; i++)
-    compile(nd_get_child(node, i));
 }

@@ -1,0 +1,10 @@
+{
+    "indent": {
+        "size": 2,
+        "use space": "true"
+    },
+
+    "newline before bracket": {
+        "before else": "true"
+    }
+}

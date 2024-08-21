@@ -1,4 +1,4 @@
-TARGET		?= 	mcc
+TARGET		?= 	metro
 DBGPREFIX	?=	d
 
 TOPDIR		?= 	$(CURDIR)

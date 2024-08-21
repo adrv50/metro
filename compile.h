@@ -30,8 +30,8 @@ typedef struct {
   int rdest;
   int rsrc;
 
-} asm_operand_t;
+} asm_operand;
 
-asm_operand_t make_asm_op(asm_op_kind_t kind, int rdest, int rsrc);
+asm_operand make_asm_op(asm_op_kind_t kind, int rdest, int rsrc);
 
 void compiler_compile_full(node_t* node);

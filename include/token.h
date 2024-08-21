@@ -2,10 +2,9 @@
 
 #include "types.h"
 #include "source.h"
+#include "object.h"
 
-typedef u16 token_kind_t;
-
-enum {
+typedef enum {
   TOK_INT,
   TOK_FLOAT,
   TOK_CHAR,
@@ -14,24 +13,21 @@ enum {
   TOK_IDENTIFIER,
   TOK_PUNCTUATER,
   TOK_END
-};
+} token_kind_t;
 
 typedef struct token_t token_t;
 struct token_t {
   token_kind_t kind;
   token_t* prev;
   token_t* next;
+
+  source_t* src;
   char* str;
   size_t len;
   size_t pos;
-  source_t* src;
 
-  union {
-    int val;
-    char val_c;
-    float val_f;
-  };
+  mt_object* value;
 };
 
-token_t* token_new(token_kind_t kind, token_t* prev, char* str, size_t len,
-                   size_t pos);
+token_t* token_new(token_kind_t kind, token_t* prev, char* str,
+                   size_t len, size_t pos);

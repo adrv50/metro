@@ -2,12 +2,10 @@
 #include "metro.h"
 
 /*
-
 ・なぜこうするのか？　何を思ってこうした？
 　その瞬間思ったことならば　それをコメントに書こう
 
 ・コメントは、未来の自分に宛てた手紙
-
 */
 
 static mt_error _err_top;
@@ -51,13 +49,16 @@ void mt_error_emit(mt_error* err) {
   size_t pos;
   size_t len;
 
-  // node の実装がめんどいのでとりあえず token からつくられたことにする
-  if (err->node) err->token = err->node->tok;
+  // node の実装がめんどいのでとりあえず token
+  // からつくられたことにする
+  if (err->node)
+    err->token = err->node->tok;
 
   if (err->token) {
     pos = err->token->pos;
     len = err->token->len;
-  } else {
+  }
+  else {
     todo_impl;
   }
 
@@ -85,7 +86,8 @@ void driver_free(mtdriver* dr) {
 
 // debug
 static void print_int_vector(vector* v) {
-  for (size_t i = 0; i < v->count; i++) printf("%d ", *(int*)vector_get(v, i));
+  for (size_t i = 0; i < v->count; i++)
+    printf("%d ", *(int*)vector_get(v, i));
 
   printf("\n");
 }
@@ -101,11 +103,13 @@ static void test1() {
 
   vector* vec = vector_new(sizeof(int));
 
-  for (int i = 10; i < 20; i++) vector_append(vec, &i);
+  for (int i = 10; i < 20; i++)
+    vector_append(vec, &i);
 
   vector* vec2 = vector_new(sizeof(int));
 
-  for (int i = 1; i < 5; i++) vector_append(vec2, &i);
+  for (int i = 1; i < 5; i++)
+    vector_append(vec2, &i);
 
   vector_insert_vector(vec, 3, vec2);
 
@@ -123,7 +127,8 @@ void print_token(token_t* tok) {
   while (tok && tok->kind != TOK_END) {
     printf("%.*s ", (int)tok->len, tok->str);
 
-    if (tok->next) tok = tok->next;
+    if (tok->next)
+      tok = tok->next;
   }
 
   printf("}\n");
@@ -139,8 +144,8 @@ int driver_main(mtdriver* dr, int argc, char** argv) {
 
   token_t* tok = lexer_lex(dr->lexer);
 
-  // mt_abort_with(mt_new_error_from_token(ERR_INVALID_TOKEN, "test error",
-  // tok));
+  // mt_abort_with(mt_new_error_from_token(ERR_INVALID_TOKEN, "test
+  // error", tok));
 
   // print_token(tok);
 
@@ -149,7 +154,11 @@ int driver_main(mtdriver* dr, int argc, char** argv) {
   // print_node(nd);
   // puts("\n");
 
-  compiler_compile_full(nd);
+  mt_eval_init();
+
+  mt_object* result = mt_eval_evalfull(nd);
+
+  // compiler_compile_full(nd);
 
   node_free(nd);
   metro_exit();
@@ -157,9 +166,13 @@ int driver_main(mtdriver* dr, int argc, char** argv) {
   return 0;
 }
 
-source_t* driver_get_current_source(mtdriver* dr) { return cur_source; }
+source_t* driver_get_current_source(mtdriver* dr) {
+  return cur_source;
+}
 
-void metro_init() { errptr = &_err_top; }
+void metro_init() {
+  errptr = &_err_top;
+}
 
 void metro_exit() {
   // mt_error のメモリは解放しない

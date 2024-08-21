@@ -27,17 +27,22 @@ parser_ctx parser_new(source_t* src, token_t* list) {
 
 static parser_ctx ctx;
 
-static token_t* getcur() { return ctx.cur; }
+static token_t* getcur() {
+  return ctx.cur;
+}
 
-static bool check() { return getcur()->kind != TOK_END; }
+static bool check() {
+  return getcur()->kind != TOK_END;
+}
 
-static void next() { ctx.cur = ctx.cur->next; }
+static void next() {
+  ctx.cur = ctx.cur->next;
+}
 
 static bool match(char const* str) {
   size_t len = strlen(str);
 
-  return getcur()->len >= len &&
-         strncmp(str, getcur()->str, len) == 0;
+  return getcur()->len >= len && strncmp(str, getcur()->str, len) == 0;
 }
 
 static bool eat(char const* str) {
@@ -51,8 +56,8 @@ static bool eat(char const* str) {
 
 static void expect_keep(char const* str) {
   if (!match(str)) {
-    mt_abort_with(mt_new_error_from_token(
-        ERR_UNEXPECTED_TOKEN, "unexpected token", getcur()));
+    mt_abort_with(mt_new_error_from_token(ERR_UNEXPECTED_TOKEN,
+                                          "unexpected token", getcur()));
   }
 }
 
@@ -71,8 +76,8 @@ static token_t* expect_identifier() {
   token_t* tok = getcur();
 
   if (tok->kind != TOK_IDENTIFIER) {
-    mt_abort_with(mt_new_error_from_token(
-        ERR_UNEXPECTED_TOKEN, "expected identifier", tok));
+    mt_abort_with(mt_new_error_from_token(ERR_UNEXPECTED_TOKEN,
+                                          "expected identifier", tok));
   }
 
   next();
@@ -99,24 +104,26 @@ static node_t* p_factor() {
   next();
 
   switch (tok->kind) {
-    case TOK_INT:
-    case TOK_FLOAT:
-    case TOK_CHAR:
-    case TOK_STRING:
-      node = node_new_with_token(ND_VALUE, tok);
-      break;
+  case TOK_INT:
+  case TOK_FLOAT:
+  case TOK_CHAR:
+  case TOK_STRING:
+    node = node_new_with_token(ND_VALUE, tok);
 
-    case TOK_IDENTIFIER:
-      node = node_new_with_token(ND_VARIABLE, tok);
+    break;
 
-      if (eat("(")) {
-      }
+  case TOK_IDENTIFIER:
+    node = node_new_with_token(ND_VARIABLE, tok);
 
-      break;
+    if (eat("(")) {
+      todo_impl;
+    }
 
-    default:
-      mt_abort_with(mt_new_error_from_token(ERR_INVALID_SYNTAX,
-                                            "invalid syntax", tok));
+    break;
+
+  default:
+    mt_abort_with(
+        mt_new_error_from_token(ERR_INVALID_SYNTAX, "invalid syntax", tok));
   }
 
   return node;
@@ -158,7 +165,9 @@ static node_t* p_add() {
   return x;
 }
 
-static node_t* p_expr() { return p_add(); }
+static node_t* p_expr() {
+  return p_add();
+}
 
 static node_t* p_stmt() {
   node_t* node = NULL;
@@ -170,7 +179,8 @@ static node_t* p_stmt() {
   if (eat("{")) {
     node = node_new(ND_BLOCK);
 
-    if (eat("}")) return node;
+    if (eat("}"))
+      return node;
 
     while (check() && !(closed = eat("}"))) {
       node_append(node, p_stmt());
@@ -208,7 +218,8 @@ static node_t* p_stmt() {
 
     // "else if" or "else {"
     if (eat("else")) {
-      if (!match("if")) expect_keep("{");
+      if (!match("if"))
+        expect_keep("{");
 
       node_append(node, p_stmt());
     } else

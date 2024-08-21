@@ -1,25 +1,24 @@
-#include <stdio.h>
-#include <string.h>
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "alert.h"
 #include "lexer.h"
 #include "metro.h"
 
 static char* punctuaters[] = {
-    "<<=", ">>=", "<<", ">>", "<=", ">=", "==", "!=", "..",
-    "&&",  "||",  "->", "<",  ">",  "+",  "-",  "/",  "*",
-    "%",   "=",   ";",  ":",  ",",  ".",  "[",  "]",  "(",
-    ")",   "{",   "}",  "!",  "?",  "&",  "^",  "|",
+    "<<=", ">>=", "<<", ">>", "<=", ">=", "==", "!=", "..", "&&", "||", "->",
+    "<",   ">",   "+",  "-",  "/",  "*",  "%",  "=",  ";",  ":",  ",",  ".",
+    "[",   "]",   "(",  ")",  "{",  "}",  "!",  "?",  "&",  "^",  "|",
 };
 
 static size_t const punctuaters_size =
     sizeof(punctuaters) / sizeof(char const*);
 
-token_t* token_new(token_kind_t kind, token_t* prev, char* str,
-                   size_t len, size_t pos) {
+token_t* token_new(token_kind_t kind, token_t* prev, char* str, size_t len,
+                   size_t pos) {
   token_t* tok = calloc(1, sizeof(token_t));
 
   tok->kind = kind;
@@ -29,7 +28,8 @@ token_t* token_new(token_kind_t kind, token_t* prev, char* str,
   tok->len = len;
   tok->pos = pos;
 
-  if (prev) prev->next = tok;
+  if (prev)
+    prev->next = tok;
 
   return tok;
 }
@@ -38,14 +38,7 @@ source_t* source_new(char* path) {
   FILE* fp = fopen(path, "r");
 
   if (fp == NULL) {
-    int err = errno;
-
-    switch (err) {
-      case ENOENT:
-        fprintf(stderr, "cannot open '%s'", path);
-        break;
-    }
-
+    fprintf(stderr, "cannot open '%s'", path);
     return NULL;
   }
 
@@ -53,13 +46,15 @@ source_t* source_new(char* path) {
   s->path = path;
 
   fseek(fp, 0, SEEK_END);
+
   s->length = s->size = ftell(fp);
 
   s->data = malloc(s->size + 2);
 
   fseek(fp, 0, SEEK_SET);
 
-  if (fread(s->data, s->size, 1, fp) != 1) abort();
+  if (fread(s->data, s->size, 1, fp) != 1)
+    abort();
 
   if (s->size == 0 || s->data[s->size - 1] != '\n')
     s->data[s->size++] = '\n';
@@ -93,20 +88,17 @@ void lexer_free(mtlexer* lx) {
   free(lx);
 }
 
-static bool lx_check(mtlexer* lx) {
-  return lx->position < lx->length;
-}
+static bool lx_check(mtlexer* lx) { return lx->position < lx->length; }
 
 static char lx_peek(mtlexer* lx) {
   return lx_check(lx) ? lx->src->data[lx->position] : 0;
 }
 
-static char* lx_cur_ptr(mtlexer* lx) {
-  return lx->src->data + lx->position;
-}
+static char* lx_cur_ptr(mtlexer* lx) { return lx->src->data + lx->position; }
 
 static void lx_pass_space(mtlexer* lx) {
-  while (lx_check(lx) && isspace(lx_peek(lx))) lx->position++;
+  while (lx_check(lx) && isspace(lx_peek(lx)))
+    lx->position++;
 }
 
 static bool lx_match(mtlexer* lx, char* str, size_t len) {
@@ -167,8 +159,8 @@ static token_t* lx_eat_punctuater(mtlexer* lx, token_t* prev) {
     size_t len = strlen(punctuaters[i]);
 
     if (lx_match(lx, punctuaters[i], len)) {
-      token_t* tok = token_new(TOK_PUNCTUATER, prev, punctuaters[i],
-                               len, lx->position);
+      token_t* tok =
+          token_new(TOK_PUNCTUATER, prev, punctuaters[i], len, lx->position);
 
       lx->position += len;
 
@@ -192,12 +184,20 @@ token_t* lexer_lex(mtlexer* lx) {
 
     // comment line
     if (lx_eatstr(lx, "//", 2)) {
-      while (lx_check(lx) && lx_peek(lx) != '\n') lx->position++;
+      while (lx_check(lx) && lx_peek(lx) != '\n')
+        lx->position++;
     }
 
     // comment block
     else if (lx_eatstr(lx, "/*", 2)) {
-      while (lx_check(lx) && !lx_eatstr(lx, "*/", 2)) lx->position++;
+      while (lx_check(lx) && !lx_eatstr(lx, "*/", 2))
+        lx->position++;
+    }
+
+    // hexadecimal
+    else if (lx_eatstr(lx, "0x", 2) || lx_eatstr(lx, "0X", 2)) {
+      cur = token_new(TOK_INT, cur, str, lx_pass(lx, "09afAF"), pos);
+      cur->value = mt_obj_new_int(strtoll(str, str + cur->len, 16));
     }
 
     // int or float
@@ -209,11 +209,11 @@ token_t* lexer_lex(mtlexer* lx) {
         cur->kind = TOK_FLOAT;
         cur->len += lx_pass(lx, "09") + lx_eat(lx, 'f') + 1;
 
-        cur->val_f = atof(str);
+        cur->value = mt_obj_new_float(strtod(str, str + cur->len));
       }
       // int
       else {
-        cur->val = atoi(str);
+        cur->value = mt_obj_new_int(strtoll(str, str + cur->len, 10));
       }
     }
 
@@ -221,36 +221,41 @@ token_t* lexer_lex(mtlexer* lx) {
     else if (lx_eat(lx, '\'')) {
       bool closed;
 
-      while (!(closed = lx_peek(lx) == '\'')) lx->position++;
+      while (!(closed = lx_peek(lx) == '\''))
+        lx->position++;
 
       if (!closed) {
-        mt_abort_with(mt_new_error(ERR_INVALID_TOKEN,
-                                   "not closed literal", pos));
+        mt_abort_with(
+            mt_new_error(ERR_INVALID_TOKEN, "not closed literal", pos));
       }
+
+      cur = token_new(TOK_CHAR, cur, str, lx->position - pos, pos);
+
+      todo_impl;
+      cur->value = mt_obj_new_char(0);
     }
 
     // string
     else if (lx_eat(lx, '"')) {
       bool closed;
 
-      while (!(closed = lx_eat(lx, '"'))) lx->position++;
+      while (!(closed = lx_eat(lx, '"')))
+        lx->position++;
 
       if (!closed) {
-        mt_abort_with(mt_new_error(ERR_INVALID_TOKEN,
-                                   "not closed literal", pos));
+        mt_abort_with(
+            mt_new_error(ERR_INVALID_TOKEN, "not closed literal", pos));
       }
     }
 
     // identifier
     else if (c == '_' || isalpha(c)) {
-      cur = token_new(TOK_IDENTIFIER, cur, str,
-                      lx_pass(lx, "__09azAZ"), pos);
+      cur = token_new(TOK_IDENTIFIER, cur, str, lx_pass(lx, "__09azAZ"), pos);
     }
 
     // punctuater
     else if (!(cur = lx_eat_punctuater(lx, cur))) {
-      mt_abort_with(
-          mt_new_error(ERR_INVALID_TOKEN, "invalid token", pos));
+      mt_abort_with(mt_new_error(ERR_INVALID_TOKEN, "invalid token", pos));
     }
 
     lx_pass_space(lx);

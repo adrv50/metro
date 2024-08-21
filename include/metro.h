@@ -4,8 +4,7 @@
 #include "types.h"
 #include "lexer.h"
 #include "parser.h"
-#include "compile.h"
-#include "node.h"
+#include "eval.h"
 
 typedef enum {
   // unknown character on source code
@@ -34,7 +33,8 @@ struct mt_error {
   mt_error* _next;
 };
 
-mt_error* mt_new_error(mt_err_kind_t kind, char const* msg, size_t pos);
+mt_error* mt_new_error(mt_err_kind_t kind, char const* msg,
+                       size_t pos);
 
 mt_error* mt_new_error_from_token(mt_err_kind_t kind, char const* msg,
                                   token_t* token);
