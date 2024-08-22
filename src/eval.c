@@ -2,66 +2,64 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "alert.h"
 #include "eval.h"
 #include "vector.h"
 
-typedef struct {
-  node_t* cur;
-
-} eval_context;
-
-static vector* ev_ctx_stack; // vector<eval_context>
-static eval_context* ctx;
-
-static void ev_enter(node_t* node) {
-  eval_context context = {0};
-
-  context.cur = node;
-
-  ctx = vector_append(ev_ctx_stack, &context);
+static bool check_valid_operator(mt_type_info_t) {
 }
 
-static void ev_leave() {
-  vector_pop_back(ev_ctx_stack);
-
-  ctx = vector_last(ev_ctx_stack);
-}
-
-static mt_object* ev_eval() {
-  int* case_labels[] = {
+static mt_object* evaluate(mt_node_t* node) {
+  static int* case_labels[] = {
       [ND_VALUE] = &&case_value,
+      [ND_PROGRAM] = &&case_program,
+  };
 
+  static int* op_expr_labels[] = {
       [ND_MUL] = &&case_mul,
       [ND_ADD] = &&case_add,
   };
 
-  node_t* node = ctx->cur;
-  node_t* lhs = NULL;
-  node_t* rhs = NULL;
+  mt_object* result = NULL;
 
-  if (node->kind >= ND_MUL && node->kind <= ND_ASSIGN) {
-    lhs = nd_lhs(node);
-    rhs = nd_rhs(node);
-  }
+  // alertfmt("%hhd\n", node->kind);
+
+  if (node->kind >= _NDKIND_BEGIN_OF_LR_OP_EXPR_ &&
+      node->kind <= _NDKIND_END_OF_LR_OP_EXPR_)
+    goto case_lr_operator_expr;
 
   goto* case_labels[node->kind];
 
 case_value:
   return node->value;
 
+case_program:
+  for (size_t i = 0; i < node->child->count; i++)
+    result = evaluate(nd_get_child(node, i));
+
+  return result;
+
+case_lr_operator_expr:
+
+  mt_object* left = evaluate(nd_lhs(node));
+  mt_object* right = evaluate(nd_rhs(node));
+
+  goto* op_expr_labels[node->kind];
+
 case_mul:
 
 case_add:
+  left->vi += right->vi;
 
-  return NULL;
+  return left;
 }
 
-void mt_eval_init(void) { ev_ctx_stack = vector_new(sizeof(eval_context)); }
+void mt_eval_init(void) {
+}
 
-void mt_eval_exit(void) { vector_free(ev_ctx_stack); }
+void mt_eval_exit(void) {
+}
 
-mt_object* mt_eval_evalfull(node_t* node) {
-  ev_enter(node);
-
-  return ev_eval();
+mt_object* mt_eval_evalfull(mt_node_t* node) {
+  return evaluate(node);
 }

@@ -15,7 +15,7 @@ typedef enum {
 
 typedef struct {
   mt_type_kind kind;
-  vector* params;  // vector<mt_typeinfo>
-} mt_typeinfo;
+  vector* params; // vector<mt_type_info_t>
+} mt_type_info_t;
 
-mt_typeinfo mt_typeinfo_new(mt_type_kind kind);
+mt_type_info_t mt_typeinfo_new(mt_type_kind kind);

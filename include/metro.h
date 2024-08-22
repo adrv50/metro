@@ -21,26 +21,24 @@ typedef enum {
 
 } mt_err_kind_t;
 
-typedef struct mt_error mt_error;
-struct mt_error {
+typedef struct mt_error_tag {
   mt_err_kind_t kind;
   char const* msg;
 
   size_t position;
   token_t* token;
-  node_t* node;
+  mt_node_t* node;
 
-  mt_error* _next;
-};
+  struct mt_error_tag* _next;
+} mt_error;
 
-mt_error* mt_new_error(mt_err_kind_t kind, char const* msg,
-                       size_t pos);
+mt_error* mt_new_error(mt_err_kind_t kind, char const* msg, size_t pos);
 
 mt_error* mt_new_error_from_token(mt_err_kind_t kind, char const* msg,
                                   token_t* token);
 
 mt_error* mt_new_error_from_node(mt_err_kind_t kind, char const* msg,
-                                 node_t* node);
+                                 mt_node_t* node);
 
 void mt_error_emit(mt_error* err);
 

@@ -37,7 +37,7 @@ mt_error* mt_new_error_from_token(mt_err_kind_t kind, char const* msg,
 }
 
 mt_error* mt_new_error_from_node(mt_err_kind_t kind, char const* msg,
-                                 node_t* node) {
+                                 mt_node_t* node) {
   mt_error* err = mt_new_error(kind, msg, 0);
 
   err->node = node;
@@ -57,8 +57,7 @@ void mt_error_emit(mt_error* err) {
   if (err->token) {
     pos = err->token->pos;
     len = err->token->len;
-  }
-  else {
+  } else {
     todo_impl;
   }
 
@@ -149,7 +148,7 @@ int driver_main(mtdriver* dr, int argc, char** argv) {
 
   // print_token(tok);
 
-  node_t* nd = parser_parse(dr->source, tok);
+  mt_node_t* nd = parser_parse(dr->source, tok);
 
   // print_node(nd);
   // puts("\n");
@@ -157,6 +156,8 @@ int driver_main(mtdriver* dr, int argc, char** argv) {
   mt_eval_init();
 
   mt_object* result = mt_eval_evalfull(nd);
+
+  printf("%ld\n", result->vi);
 
   // compiler_compile_full(nd);
 

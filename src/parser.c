@@ -3,13 +3,12 @@
 
 #include "metro.h"
 
-typedef struct parser_ctx parser_ctx;
-struct parser_ctx {
+typedef struct {
   source_t* src;
   token_t* list;
   token_t* endtok;
   token_t* cur;
-};
+} parser_ctx;
 
 parser_ctx parser_new(source_t* src, token_t* list) {
   parser_ctx ctx = {};
@@ -66,8 +65,8 @@ static void expect(char const* str) {
   next();
 }
 
-static node_t* p_stmt();
-static node_t* expect_block() {
+static mt_node_t* p_stmt();
+static mt_node_t* expect_block() {
   expect_keep("{");
   return p_stmt();
 }
@@ -84,8 +83,8 @@ static token_t* expect_identifier() {
   return tok;
 }
 
-static node_t* expect_typename() {
-  node_t* node = node_new(ND_TYPENAME);
+static mt_node_t* expect_typename() {
+  mt_node_t* node = node_new(ND_TYPENAME);
 
   node->tok = expect_identifier();
 
@@ -97,9 +96,9 @@ static node_t* expect_typename() {
   return node;
 }
 
-static node_t* p_factor() {
+static mt_node_t* p_factor() {
   token_t* tok = getcur();
-  node_t* node;
+  mt_node_t* node;
 
   next();
 
@@ -109,7 +108,7 @@ static node_t* p_factor() {
   case TOK_CHAR:
   case TOK_STRING:
     node = node_new_with_token(ND_VALUE, tok);
-
+    node->value = tok->value;
     break;
 
   case TOK_IDENTIFIER:
@@ -129,8 +128,8 @@ static node_t* p_factor() {
   return node;
 }
 
-static node_t* p_mul() {
-  node_t* x = p_factor();
+static mt_node_t* p_mul() {
+  mt_node_t* x = p_factor();
   token_t* tok;
 
   while (check()) {
@@ -147,8 +146,8 @@ static node_t* p_mul() {
   return x;
 }
 
-static node_t* p_add() {
-  node_t* x = p_mul();
+static mt_node_t* p_add() {
+  mt_node_t* x = p_mul();
   token_t* tok;
 
   while (check()) {
@@ -165,17 +164,19 @@ static node_t* p_add() {
   return x;
 }
 
-static node_t* p_expr() {
+static mt_node_t* p_expr() {
   return p_add();
 }
 
-static node_t* p_stmt() {
-  node_t* node = NULL;
+static mt_node_t* p_stmt() {
+  mt_node_t* node = NULL;
   bool closed = false;
 
   token_t* token = getcur();
 
+  //
   // block
+  //
   if (eat("{")) {
     node = node_new(ND_BLOCK);
 
@@ -205,7 +206,9 @@ static node_t* p_stmt() {
   else if (eat("let")) {
   }
 
-  // if
+  //
+  //  if-statement
+  //
   else if (eat("if")) {
     node = node_new(ND_IF);
 
@@ -226,7 +229,9 @@ static node_t* p_stmt() {
       node_append(node, NULL);
   }
 
+  //
   // expr
+  //
   else {
     node = p_expr();
     expect(";");
@@ -235,7 +240,7 @@ static node_t* p_stmt() {
   return node;
 }
 
-static node_t* p_top() {
+static mt_node_t* p_top() {
   token_t* tok = getcur();
 
   //
@@ -270,21 +275,21 @@ static node_t* p_top() {
   //    child[2 <=]   = params
   //
   else if (eat("fn")) {
-    node_t* func = node_new_with_token(ND_FUNCTION, tok);
+    mt_node_t* func = node_new_with_token(ND_FUNCTION, tok);
 
     tok = expect_identifier();
 
     func->name = tok->str;
     func->len = tok->len;
 
-    node_t** rettype = node_append(func, NULL);
-    node_t** block = node_append(func, NULL);
+    mt_node_t** rettype = node_append(func, NULL);
+    mt_node_t** block = node_append(func, NULL);
 
     expect("(");
 
     if (!eat(")")) {
       do {
-        node_t* param = *node_append(
+        mt_node_t* param = *node_append(
             func, node_new_with_token(ND_PARAM, expect_identifier()));
 
         expect(":");
@@ -307,13 +312,16 @@ static node_t* p_top() {
     return func;
   }
 
+  //
+  // statement or expression
+  //
   return p_stmt();
 }
 
-node_t* parser_parse(source_t* src, token_t* toklist) {
+mt_node_t* parser_parse(source_t* src, token_t* toklist) {
   ctx = parser_new(src, toklist);
 
-  node_t* nd = node_new(ND_PROGRAM);
+  mt_node_t* nd = node_new(ND_PROGRAM);
 
   while (check()) {
     node_append(nd, p_top());

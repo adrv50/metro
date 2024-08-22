@@ -4,7 +4,9 @@
 #include "source.h"
 #include "object.h"
 
-typedef enum {
+typedef u8 token_kind_t;
+
+enum {
   TOK_INT,
   TOK_FLOAT,
   TOK_CHAR,
@@ -13,13 +15,12 @@ typedef enum {
   TOK_IDENTIFIER,
   TOK_PUNCTUATER,
   TOK_END
-} token_kind_t;
+};
 
-typedef struct token_t token_t;
-struct token_t {
+typedef struct token_tag {
   token_kind_t kind;
-  token_t* prev;
-  token_t* next;
+  struct token_tag* prev;
+  struct token_tag* next;
 
   source_t* src;
   char* str;
@@ -27,7 +28,7 @@ struct token_t {
   size_t pos;
 
   mt_object* value;
-};
+} token_t;
 
-token_t* token_new(token_kind_t kind, token_t* prev, char* str,
-                   size_t len, size_t pos);
+token_t* token_new(token_kind_t kind, token_t* prev, char* str, size_t len,
+                   size_t pos);

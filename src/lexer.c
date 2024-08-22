@@ -88,13 +88,17 @@ void lexer_free(mtlexer* lx) {
   free(lx);
 }
 
-static bool lx_check(mtlexer* lx) { return lx->position < lx->length; }
+static bool lx_check(mtlexer* lx) {
+  return lx->position < lx->length;
+}
 
 static char lx_peek(mtlexer* lx) {
   return lx_check(lx) ? lx->src->data[lx->position] : 0;
 }
 
-static char* lx_cur_ptr(mtlexer* lx) { return lx->src->data + lx->position; }
+static char* lx_cur_ptr(mtlexer* lx) {
+  return lx->src->data + lx->position;
+}
 
 static void lx_pass_space(mtlexer* lx) {
   while (lx_check(lx) && isspace(lx_peek(lx)))
@@ -197,7 +201,7 @@ token_t* lexer_lex(mtlexer* lx) {
     // hexadecimal
     else if (lx_eatstr(lx, "0x", 2) || lx_eatstr(lx, "0X", 2)) {
       cur = token_new(TOK_INT, cur, str, lx_pass(lx, "09afAF"), pos);
-      cur->value = mt_obj_new_int(strtoll(str, str + cur->len, 16));
+      cur->value = mt_obj_new_int(strtoll(str, NULL, 16));
     }
 
     // int or float
@@ -209,11 +213,11 @@ token_t* lexer_lex(mtlexer* lx) {
         cur->kind = TOK_FLOAT;
         cur->len += lx_pass(lx, "09") + lx_eat(lx, 'f') + 1;
 
-        cur->value = mt_obj_new_float(strtod(str, str + cur->len));
+        cur->value = mt_obj_new_float(strtod(str, NULL));
       }
       // int
       else {
-        cur->value = mt_obj_new_int(strtoll(str, str + cur->len, 10));
+        cur->value = mt_obj_new_int(strtoll(str, NULL, 10));
       }
     }
 

@@ -2,4 +2,4 @@
 
 #include "node.h"
 
-node_t* parser_parse(source_t* src, token_t* list);
+mt_node_t* parser_parse(source_t* src, token_t* list);

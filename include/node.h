@@ -3,7 +3,8 @@
 #include "token.h"
 #include "vector.h"
 
-#define nd_get_child(_ND, _INDEX) (vector_get_as(node_t*, (_ND)->child, _INDEX))
+#define nd_get_child(_ND, _INDEX)                                              \
+  (vector_get_as(mt_node_t*, (_ND)->child, _INDEX))
 
 #define nd_lhs(_ND) nd_get_child(_ND, 0)
 #define nd_rhs(_ND) nd_get_child(_ND, 1)
@@ -17,13 +18,17 @@
 #define nd_func_param_count(n) (n->child->count - 2)
 #define nd_func_get_param(n, _i) nd_get_child(n, _i + 2)
 
-typedef enum {
+typedef u8 mt_node_kind;
+
+enum {
   ND_TYPENAME,    // type  :=  <name: ident> type_param? "const"?
   ND_TYPE_PARAMS, // type_param  := "<" type ("," type)* ">"
 
   ND_VALUE,    // value    :=  (token)
   ND_VARIABLE, // ident    :=  TOK_IDENTIFIER
   ND_CALLFUNC, // callfunc :=  <ident> "(" <expr> ("," <expr>)* ")"
+
+  _NDKIND_BEGIN_OF_LR_OP_EXPR_,
 
   ND_MUL, // *
   ND_DIV, // /
@@ -38,6 +43,8 @@ typedef enum {
   ND_EQUAL,        // ==
   ND_BIGGER,       // <
   ND_BIGGER_OR_EQ, // <=
+
+  _NDKIND_END_OF_LR_OP_EXPR_,
 
   ND_ASSIGN, // =
 
@@ -66,9 +73,9 @@ typedef enum {
   ND_STRUCT,
 
   ND_PROGRAM, // (root)
-} mt_node_kind;
+};
 
-typedef struct {
+typedef struct __attribute__((__packed__)) {
   mt_node_kind kind;
   token_t* tok;
 
@@ -89,13 +96,14 @@ typedef struct {
   };
 } mt_node_t;
 
-node_t* node_new(node_kind_t kind);
-node_t* node_new_with_token(node_kind_t k, token_t* tok);
-node_t* node_new_with_lr(node_kind_t k, token_t* tok, node_t* lhs, node_t* rhs);
-void node_free(node_t* node);
+mt_node_t* node_new(mt_node_kind kind);
+mt_node_t* node_new_with_token(mt_node_kind k, token_t* tok);
+mt_node_t* node_new_with_lr(mt_node_kind k, token_t* tok, mt_node_t* lhs,
+                            mt_node_t* rhs);
+void node_free(mt_node_t* node);
 
-node_t** node_append(node_t* node, node_t* item);
+mt_node_t** node_append(mt_node_t* node, mt_node_t* item);
 
-bool node_is_same_name(node_t* node, char const* name);
+bool node_is_same_name(mt_node_t* node, char const* name);
 
-void print_node(node_t* nd);
+void print_node(mt_node_t* nd);
