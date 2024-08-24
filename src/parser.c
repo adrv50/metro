@@ -96,6 +96,7 @@ static mt_node_t* expect_typename() {
   return node;
 }
 
+static mt_node_t* p_expr();
 static mt_node_t* p_factor() {
   token_t* tok = getcur();
   mt_node_t* node;
@@ -111,14 +112,26 @@ static mt_node_t* p_factor() {
     node->value = tok->value;
     break;
 
-  case TOK_IDENTIFIER:
+  case TOK_IDENTIFIER: {
     node = node_new_with_token(ND_VARIABLE, tok);
 
     if (eat("(")) {
-      todo_impl;
+      node->kind = ND_CALLFUNC;
+
+      node->name = node->tok->str;
+      node->len = node->tok->len;
+
+      if (!eat(")")) {
+        do {
+          node_append(node, p_expr());
+        } while (check() && eat(","));
+
+        expect(")");
+      }
     }
 
     break;
+  }
 
   default:
     mt_abort_with(
