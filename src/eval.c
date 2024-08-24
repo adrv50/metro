@@ -6,7 +6,11 @@
 #include "eval.h"
 #include "vector.h"
 
-static bool check_valid_operator(mt_type_info_t) {
+static bool check_valid_operator(mt_node_kind kind, mt_type_info_t left,
+                                 mt_type_info_t right) {
+
+                                  
+
 }
 
 static mt_object* evaluate(mt_node_t* node) {

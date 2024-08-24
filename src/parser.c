@@ -225,7 +225,8 @@ static mt_node_t* p_stmt() {
         expect_keep("{");
 
       node_append(node, p_stmt());
-    } else
+    }
+    else
       node_append(node, NULL);
   }
 

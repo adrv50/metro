@@ -1,0 +1,21 @@
+{
+    "cc": "gcc",
+
+    "target": "metro",
+
+    "include": "include",
+    "src": "src",
+    "build": "build",
+
+    "cflags": [
+        "-std=c17",
+        "-Wall",
+        "-Wextra",
+        "-O3"
+    ],
+
+    "ldflags": [
+        "--gc-sections",
+        "-s"
+    ]
+}
