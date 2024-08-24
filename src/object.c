@@ -1,5 +1,7 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include "object.h"
+#include "utf-convert.h"
 
 mt_type_info_t mt_type_info_new(mt_type_kind kind) {
   mt_type_info_t ti = {0};
@@ -74,4 +76,53 @@ bool mt_obj_is_numeric(mt_object* obj) {
   }
 
   return false;
+}
+
+void print_object(mt_object* obj) {
+  switch (obj->typeinfo.kind) {
+  case TYPE_INT:
+    printf("%lu", obj->vi);
+    break;
+
+  case TYPE_FLOAT:
+    printf("%lf", obj->vf);
+    break;
+
+  case TYPE_BOOL:
+    printf(obj->vb ? "true" : "false");
+    break;
+
+  case TYPE_CHAR: {
+    char buf[10] = {0};
+    utf16_to_utf8((u8*)buf, &obj->vc, 3);
+    printf("%s", buf);
+    break;
+  }
+
+  case TYPE_STRING: {
+    size_t const buflen = obj->vs->count * 3;
+    char buf[buflen];
+
+    size_t res = utf16_to_utf8((u8*)buf, (u16*)obj->vs->_data, buflen);
+
+    buf[res] = 0;
+
+    printf("%s", buf);
+    break;
+  }
+
+  case TYPE_VECTOR: {
+    printf("[");
+
+    for (size_t i = 0; i < obj->vv->count; i++) {
+      print_object(vector_get_as(mt_object*, obj->vv, i));
+
+      if (i < obj->vv->count - 1)
+        printf(", ");
+    }
+
+    printf("]");
+    break;
+  }
+  }
 }

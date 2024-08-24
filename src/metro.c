@@ -158,7 +158,10 @@ int driver_main(mtdriver* dr, int argc, char** argv) {
 
   mt_object* result = mt_eval_evalfull(nd);
 
-  printf("%ld\n", result->vi);
+  // printf("%ld\n", result->vi);
+
+  print_object(result);
+  puts("");
 
   // compiler_compile_full(nd);
 

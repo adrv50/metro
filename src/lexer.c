@@ -268,13 +268,13 @@ token_t* lexer_lex(mtlexer* lx) {
 
       utf8_to_utf16(cur->value->vs->_data, (u8*)buf, length);
 
-      alert;
-      alertfmt("%zu", length);
-      alertfmt("cur->str = \"%.*s\"", (int)cur->len, cur->str);
+      // alert;
+      // alertfmt("%zu", length);
+      // alertfmt("cur->str = \"%.*s\"", (int)cur->len, cur->str);
 
-      for (size_t i = 0; i <= length; i++) {
-        alertfmt("%04X", vector_get_as(u16, cur->value->vs, i));
-      }
+      // for (size_t i = 0; i <= length; i++) {
+      //   alertfmt("%04X", vector_get_as(u16, cur->value->vs, i));
+      // }
     }
 
     // identifier

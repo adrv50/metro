@@ -38,3 +38,5 @@ mt_object* mt_obj_new_string();
 mt_object* mt_obj_new_vector();
 
 bool mt_obj_is_numeric(mt_object* obj);
+
+void print_object(mt_object* obj);
