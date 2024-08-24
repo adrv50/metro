@@ -217,6 +217,22 @@ static mt_node_t* p_stmt() {
   //    child[1]      --->  value   or null
   //
   else if (eat("let")) {
+    node = node_new(ND_VARDEF);
+
+    token = expect_identifier();
+    node->name = token->str;
+    node->len = token->len;
+
+    mt_node_t** type = node_append(node, NULL);
+    mt_node_t** init = node_append(node, NULL);
+
+    if (eat(":"))
+      *type = expect_typename();
+
+    if (eat("="))
+      *init = p_expr();
+
+    expect(";");
   }
 
   //

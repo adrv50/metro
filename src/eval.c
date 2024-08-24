@@ -67,7 +67,7 @@ static mt_object* add_object(mt_object* left, mt_object* right) {
   }
 
   //
-  // 文字列 + 文字列
+  // str + str
   else if (IS_STRING(left) && IS_STRING(right)) {
     vector_append_vector(left->vs, right->vs);
   }
@@ -83,11 +83,13 @@ static mt_object* evaluate(mt_node_t* node) {
   static int* case_labels[] = {
       [ND_VALUE] = &&case_value,
       [ND_PROGRAM] = &&case_program,
+      [ND_VARDEF] = &&case_vardef,
+      [ND_BLOCK] = &&case_block,
   };
 
   static int* op_expr_labels[] = {
-      [ND_MUL] = &&case_mul,
-      [ND_ADD] = &&case_add,
+      [ND_MUL] = &&expr_mul,
+      [ND_ADD] = &&expr_add,
   };
 
   mt_object* result = NULL;
@@ -111,6 +113,8 @@ case_program:
 
   return result;
 
+case_vardef:
+
 case_lr_operator_expr:
 
   mt_object* left = evaluate(nd_lhs(node));
@@ -120,9 +124,9 @@ case_lr_operator_expr:
 
   goto* op_expr_labels[node->kind];
 
-case_mul:
+expr_mul:
 
-case_add:
+expr_add:
   add_object(left, right);
 
   return left;
