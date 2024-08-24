@@ -65,3 +65,13 @@ mt_object* mt_obj_new_vector() {
 
   return obj;
 }
+
+bool mt_obj_is_numeric(mt_object* obj) {
+  switch (obj->typeinfo.kind) {
+  case TYPE_INT:
+  case TYPE_FLOAT:
+    return true;
+  }
+
+  return false;
+}

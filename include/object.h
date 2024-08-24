@@ -19,7 +19,11 @@ typedef struct {
     double vf;
     bool vb;
     u16 vc;
-    u16* vs;
+
+    struct {   // TYPE_STRING
+      u16* vs; // => Don't terminate by zero.
+      size_t vs_count;
+    };
 
     // when TYPE_VECTOR
     vector* vv; // => vector<mt_object*>
@@ -34,3 +38,5 @@ mt_object* mt_obj_new_bool(bool v);
 mt_object* mt_obj_new_char(u16 v);
 mt_object* mt_obj_new_string(u16* v);
 mt_object* mt_obj_new_vector();
+
+bool mt_obj_is_numeric(mt_object* obj);

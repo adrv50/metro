@@ -28,13 +28,13 @@
 
 #ifdef _METRO_DEBUG_
 
-#define debug(...) __VA_ARGS__
+#define debug(...) __VA_ARGS__;
 #define alert printf("\t%s:%u\talert\n", strrchr(__FILE__, '/') + 1, __LINE__);
-#define alertmsg(msg)                                                  \
-  printf("\t%s:%u\talertmsg " COL_BK_BLACK COL_WHITE #msg COL_DEFAULT, \
+#define alertmsg(msg)                                                          \
+  printf("\t%s:%u\talertmsg " COL_BK_BLACK COL_WHITE #msg COL_DEFAULT,         \
          strrchr(__FILE__, '/') + 1, __LINE__)
-#define alertfmt(fmt, e...)                                           \
-  printf("\t%s:%u\talertfmt " COL_BK_BLACK COL_WHITE fmt COL_DEFAULT, \
+#define alertfmt(fmt, e...)                                                    \
+  printf("\t%s:%u\talertfmt " COL_BK_BLACK COL_WHITE fmt COL_DEFAULT,          \
          strrchr(__FILE__, '/') + 1, __LINE__, e)
 
 #define todo_impl (alertmsg(not implemented), exit(1))
@@ -46,14 +46,14 @@
 #define alertmsg(...) (void)0
 #define alertfmt(...) (void)0
 
-#define todo_impl                                                          \
-  {                                                                        \
-    fprintf(stderr, "%s:%u: not implemented error\n", __FILE__, __LINE__); \
-    exit(1);                                                               \
+#define todo_impl                                                              \
+  {                                                                            \
+    fprintf(stderr, "%s:%u: not implemented error\n", __FILE__, __LINE__);     \
+    exit(1);                                                                   \
   }
-#define panic                                               \
-  {                                                         \
-    fprintf(stderr, "%s:%u: panic.\n", __FILE__, __LINE__); \
-    exit(1);                                                \
+#define panic                                                                  \
+  {                                                                            \
+    fprintf(stderr, "%s:%u: panic.\n", __FILE__, __LINE__);                    \
+    exit(1);                                                                   \
   }
 #endif

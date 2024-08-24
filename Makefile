@@ -9,7 +9,7 @@ SOURCE		:= 	src
 CC			:=	gcc
 
 OPTI		?=	-O0 -g -D_METRO_DEBUG_
-COMMON		:=	$(OPTI) -Wall -Wextra $(INCLUDES)
+COMMON		:=	$(OPTI) -Wall -Wno-switch $(INCLUDES)
 CFLAGS		:=	$(COMMON) -std=c17
 LDFLAGS		:=
 
