@@ -18,4 +18,4 @@ typedef struct {
   vector* params; // vector<mt_type_info_t>
 } mt_type_info_t;
 
-mt_type_info_t mt_typeinfo_new(mt_type_kind kind);
+mt_type_info_t mt_type_info_new(mt_type_kind kind);

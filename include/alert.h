@@ -31,10 +31,10 @@
 #define debug(...) __VA_ARGS__;
 #define alert printf("\t%s:%u\talert\n", strrchr(__FILE__, '/') + 1, __LINE__);
 #define alertmsg(msg)                                                          \
-  printf("\t%s:%u\talertmsg " COL_BK_BLACK COL_WHITE #msg COL_DEFAULT,         \
+  printf("\t%s:%u\talertmsg " COL_BOLD COL_WHITE #msg "\n" COL_DEFAULT,        \
          strrchr(__FILE__, '/') + 1, __LINE__)
 #define alertfmt(fmt, e...)                                                    \
-  printf("\t%s:%u\talertfmt " COL_BK_BLACK COL_WHITE fmt COL_DEFAULT,          \
+  printf("\t%s:%u\talertfmt " COL_BOLD COL_WHITE fmt "\n" COL_DEFAULT,         \
          strrchr(__FILE__, '/') + 1, __LINE__, e)
 
 #define todo_impl (alertmsg(not implemented), exit(1))

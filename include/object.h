@@ -20,10 +20,8 @@ typedef struct {
     bool vb;
     u16 vc;
 
-    struct {   // TYPE_STRING
-      u16* vs; // => Don't terminate by zero.
-      size_t vs_count;
-    };
+    // when TYPE_STRING
+    vector* vs; // => vector<u16>
 
     // when TYPE_VECTOR
     vector* vv; // => vector<mt_object*>
@@ -36,7 +34,7 @@ mt_object* mt_obj_new_int(i64 v);
 mt_object* mt_obj_new_float(double v);
 mt_object* mt_obj_new_bool(bool v);
 mt_object* mt_obj_new_char(u16 v);
-mt_object* mt_obj_new_string(u16* v);
+mt_object* mt_obj_new_string();
 mt_object* mt_obj_new_vector();
 
 bool mt_obj_is_numeric(mt_object* obj);

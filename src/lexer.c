@@ -7,6 +7,7 @@
 #include "alert.h"
 #include "lexer.h"
 #include "metro.h"
+#include "utf-convert.h"
 
 static char* punctuaters[] = {
     "<<=", ">>=", "<<", ">>", "<=", ">=", "==", "!=", "..", "&&", "||", "->",
@@ -223,7 +224,7 @@ token_t* lexer_lex(mtlexer* lx) {
 
     // char
     else if (lx_eat(lx, '\'')) {
-      bool closed;
+      bool closed = false;
 
       while (!(closed = lx_peek(lx) == '\''))
         lx->position++;
@@ -241,14 +242,38 @@ token_t* lexer_lex(mtlexer* lx) {
 
     // string
     else if (lx_eat(lx, '"')) {
-      bool closed;
+      bool closed = false;
 
-      while (!(closed = lx_eat(lx, '"')))
+      while (lx_check(lx) && !(closed = lx_eat(lx, '"')))
         lx->position++;
 
       if (!closed) {
         mt_abort_with(
             mt_new_error(ERR_INVALID_TOKEN, "not closed literal", pos));
+      }
+
+      cur = token_new(TOK_STRING, cur, str + 1, lx->position - pos - 2, pos);
+
+      // make null-terminated string by cur->str
+      char buf[cur->len + 1];
+
+      memcpy(buf, cur->str, cur->len);
+      buf[cur->len] = 0;
+
+      // get correctly length of cur->str
+      size_t const length = get_count_of_utf8(buf);
+
+      cur->value = mt_obj_new(mt_type_info_new(TYPE_STRING));
+      cur->value->vs = vector_new_with_count(sizeof(u16), length);
+
+      utf8_to_utf16(cur->value->vs->_data, (u8*)buf, length);
+
+      alert;
+      alertfmt("%zu", length);
+      alertfmt("cur->str = \"%.*s\"", (int)cur->len, cur->str);
+
+      for (size_t i = 0; i <= length; i++) {
+        alertfmt("%04X", vector_get_as(u16, cur->value->vs, i));
       }
     }
 

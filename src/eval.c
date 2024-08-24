@@ -6,6 +6,7 @@
 #include "alert.h"
 #include "eval.h"
 #include "vector.h"
+#include "utf-convert.h"
 
 #define IS_INT(obj) (obj->typeinfo.kind == TYPE_INT)
 #define IS_FLOAT(obj) (obj->typeinfo.kind == TYPE_FLOAT)
@@ -68,13 +69,7 @@ static mt_object* add_object(mt_object* left, mt_object* right) {
   //
   // 文字列 + 文字列
   else if (IS_STRING(left) && IS_STRING(right)) {
-    left->vs =
-        realloc(left->vs, sizeof(u16) * (left->vs_count + right->vs_count));
-
-    memcpy(left->vs + left->vs_count * sizeof(u16), right->vs,
-           right->vs_count * sizeof(u16));
-
-    left->vs_count += right->vs_count;
+    vector_append_vector(left->vs, right->vs);
   }
 
   else {
