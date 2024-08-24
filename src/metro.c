@@ -57,7 +57,8 @@ void mt_error_emit(mt_error* err) {
   if (err->token) {
     pos = err->token->pos;
     len = err->token->len;
-  } else {
+  }
+  else {
     todo_impl;
   }
 
