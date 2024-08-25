@@ -31,7 +31,8 @@ typedef struct mt_error_tag {
   struct mt_error_tag* _next;
 } mt_error;
 
-mt_error* mt_new_error(mt_err_kind_t kind, char const* msg, size_t pos);
+mt_error* mt_new_error(mt_err_kind_t kind, char const* msg,
+                       size_t pos);
 
 mt_error* mt_new_error_from_token(mt_err_kind_t kind, char const* msg,
                                   mt_token* token);

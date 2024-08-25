@@ -41,7 +41,8 @@ static void next() {
 static bool match(char const* str) {
   size_t len = strlen(str);
 
-  return getcur()->len >= len && strncmp(str, getcur()->str, len) == 0;
+  return getcur()->len >= len &&
+         strncmp(str, getcur()->str, len) == 0;
 }
 
 static bool eat(char const* str) {
@@ -55,8 +56,8 @@ static bool eat(char const* str) {
 
 static void expect_keep(char const* str) {
   if (!match(str)) {
-    mt_abort_with(mt_new_error_from_token(ERR_UNEXPECTED_TOKEN,
-                                          "unexpected token", getcur()));
+    mt_abort_with(mt_new_error_from_token(
+        ERR_UNEXPECTED_TOKEN, "unexpected token", getcur()));
   }
 }
 
@@ -75,8 +76,8 @@ static mt_token* expect_identifier() {
   mt_token* tok = getcur();
 
   if (tok->kind != TOK_IDENTIFIER) {
-    mt_abort_with(mt_new_error_from_token(ERR_UNEXPECTED_TOKEN,
-                                          "expected identifier", tok));
+    mt_abort_with(mt_new_error_from_token(
+        ERR_UNEXPECTED_TOKEN, "expected identifier", tok));
   }
 
   next();
@@ -134,8 +135,8 @@ static mt_node* p_factor() {
   }
 
   default:
-    mt_abort_with(
-        mt_new_error_from_token(ERR_INVALID_SYNTAX, "invalid syntax", tok));
+    mt_abort_with(mt_new_error_from_token(ERR_INVALID_SYNTAX,
+                                          "invalid syntax", tok));
   }
 
   return node;

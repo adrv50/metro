@@ -12,11 +12,13 @@
 #define IS_FLOAT(obj) (obj->typeinfo.kind == TYPE_FLOAT)
 #define IS_STRING(obj) (obj->typeinfo.kind == TYPE_STRING)
 
-// static bool check_valid_operator(mt_node_kind kind, mt_type_info_t left,
+// static bool check_valid_operator(mt_node_kind kind, mt_type_info_t
+// left,
 //                                  mt_type_info_t right) {
 // }
 
-static inline int is_either_type(mt_type_kind K, mt_object* a, mt_object* b) {
+static inline int is_either_type(mt_type_kind K, mt_object* a,
+                                 mt_object* b) {
   if (a->typeinfo.kind == K)
     return 1;
 

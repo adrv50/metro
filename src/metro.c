@@ -15,7 +15,8 @@ static mt_error* errptr;
 
 static source_file* cur_source;
 
-mt_error* mt_new_error(mt_err_kind_t kind, char const* msg, size_t pos) {
+mt_error* mt_new_error(mt_err_kind_t kind, char const* msg,
+                       size_t pos) {
   mt_error* err = calloc(1, sizeof(mt_error));
 
   err->kind = kind;

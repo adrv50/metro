@@ -12,8 +12,8 @@ mt_node* node_new_with_token(mt_node_kind kind, mt_token* tok) {
   return node_new_with_lr(kind, tok, NULL, NULL);
 }
 
-mt_node* node_new_with_lr(mt_node_kind kind, mt_token* tok, mt_node* lhs,
-                          mt_node* rhs) {
+mt_node* node_new_with_lr(mt_node_kind kind, mt_token* tok,
+                          mt_node* lhs, mt_node* rhs) {
   mt_node* nd = calloc(1, sizeof(mt_node));
 
   nd->kind = kind;

@@ -12,16 +12,17 @@
 #include "object.h"
 
 static char* punctuaters[] = {
-    "<<=", ">>=", "<<", ">>", "<=", ">=", "==", "!=", "..", "&&", "||", "->",
-    "<",   ">",   "+",  "-",  "/",  "*",  "%",  "=",  ";",  ":",  ",",  ".",
-    "[",   "]",   "(",  ")",  "{",  "}",  "!",  "?",  "&",  "^",  "|",
+    "<<=", ">>=", "<<", ">>", "<=", ">=", "==", "!=", "..",
+    "&&",  "||",  "->", "<",  ">",  "+",  "-",  "/",  "*",
+    "%",   "=",   ";",  ":",  ",",  ".",  "[",  "]",  "(",
+    ")",   "{",   "}",  "!",  "?",  "&",  "^",  "|",
 };
 
 static size_t const punctuaters_size =
     sizeof(punctuaters) / sizeof(char const*);
 
-mt_token* token_new(mt_token_kind kind, mt_token* prev, char* str, size_t len,
-                    size_t pos) {
+mt_token* token_new(mt_token_kind kind, mt_token* prev, char* str,
+                    size_t len, size_t pos) {
   mt_token* tok = calloc(1, sizeof(mt_token));
 
   tok->kind = kind;
@@ -129,8 +130,8 @@ static mt_token* lx_eat_punctuater(mtlexer* lx, mt_token* prev) {
     size_t len = strlen(punctuaters[i]);
 
     if (lx_match(lx, punctuaters[i], len)) {
-      mt_token* tok =
-          token_new(TOK_PUNCTUATER, prev, punctuaters[i], len, lx->position);
+      mt_token* tok = token_new(TOK_PUNCTUATER, prev, punctuaters[i],
+                                len, lx->position);
 
       lx->position += len;
 
@@ -195,8 +196,8 @@ mt_token* lexer_lex(mtlexer* lx) {
         lx->position++;
 
       if (!closed) {
-        mt_abort_with(
-            mt_new_error(ERR_INVALID_TOKEN, "not closed literal", pos));
+        mt_abort_with(mt_new_error(ERR_INVALID_TOKEN,
+                                   "not closed literal", pos));
       }
 
       cur = token_new(TOK_CHAR, cur, str, lx->position - pos, pos);
@@ -213,11 +214,12 @@ mt_token* lexer_lex(mtlexer* lx) {
         lx->position++;
 
       if (!closed) {
-        mt_abort_with(
-            mt_new_error(ERR_INVALID_TOKEN, "not closed literal", pos));
+        mt_abort_with(mt_new_error(ERR_INVALID_TOKEN,
+                                   "not closed literal", pos));
       }
 
-      cur = token_new(TOK_STRING, cur, str + 1, lx->position - pos - 2, pos);
+      cur = token_new(TOK_STRING, cur, str + 1,
+                      lx->position - pos - 2, pos);
 
       // make null-terminated string by cur->str
       char buf[cur->len + 1];
@@ -244,12 +246,14 @@ mt_token* lexer_lex(mtlexer* lx) {
 
     // identifier
     else if (c == '_' || isalpha(c)) {
-      cur = token_new(TOK_IDENTIFIER, cur, str, lx_pass(lx, "__09azAZ"), pos);
+      cur = token_new(TOK_IDENTIFIER, cur, str,
+                      lx_pass(lx, "__09azAZ"), pos);
     }
 
     // punctuater
     else if (!(cur = lx_eat_punctuater(lx, cur))) {
-      mt_abort_with(mt_new_error(ERR_INVALID_TOKEN, "invalid token", pos));
+      mt_abort_with(
+          mt_new_error(ERR_INVALID_TOKEN, "invalid token", pos));
     }
 
     lx_pass_space(lx);

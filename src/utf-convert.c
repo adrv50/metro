@@ -70,8 +70,8 @@ size_t decode_utf8(u32* out, const u8* in) {
       return -1;
     }
 
-    *out = (code[0] << 18) + (code[1] << 12) + (code[2] << 6) + code[3] -
-           0x3C82080;
+    *out = (code[0] << 18) + (code[1] << 12) + (code[2] << 6) +
+           code[3] - 0x3C82080;
 
     return 4;
   }

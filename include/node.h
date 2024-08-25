@@ -4,7 +4,7 @@
 #include "vector.h"
 #include "object.h"
 
-#define nd_get_child(_ND, _INDEX)                                              \
+#define nd_get_child(_ND, _INDEX)                                    \
   (vector_get_as(mt_node*, (_ND)->child, _INDEX))
 
 #define nd_lhs(_ND) nd_get_child(_ND, 0)
@@ -80,7 +80,7 @@ typedef struct __attribute__((__packed__)) {
   mt_node_kind kind;
   mt_token* tok;
 
-  vector* child; // vector<mt_node*>
+  vector* child; // vector<mt_node>
 
   char* name;
   size_t len;

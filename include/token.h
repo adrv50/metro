@@ -32,5 +32,5 @@ struct mt_token {
   mt_object* value;
 };
 
-mt_token* token_new(mt_token_kind kind, mt_token* prev, char* str, size_t len,
-                    size_t pos);
+mt_token* token_new(mt_token_kind kind, mt_token* prev, char* str,
+                    size_t len, size_t pos);
