@@ -79,7 +79,7 @@ static mt_object* add_object(mt_object* left, mt_object* right) {
   return left;
 }
 
-static mt_object* evaluate(mt_node_t* node) {
+static mt_object* evaluate(mt_node* node) {
   static int* case_labels[] = {
       [ND_VALUE] = &&case_value,
       [ND_PROGRAM] = &&case_program,
@@ -114,6 +114,8 @@ case_program:
   return result;
 
 case_vardef:
+case_block:
+  return NULL;
 
 case_lr_operator_expr:
 
@@ -138,6 +140,6 @@ void mt_eval_init(void) {
 void mt_eval_exit(void) {
 }
 
-mt_object* mt_eval_evalfull(mt_node_t* node) {
+mt_object* mt_eval_evalfull(mt_node* node) {
   return evaluate(node);
 }

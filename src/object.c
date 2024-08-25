@@ -3,8 +3,8 @@
 #include "object.h"
 #include "utf-convert.h"
 
-mt_type_info_t mt_type_info_new(mt_type_kind kind) {
-  mt_type_info_t ti = {0};
+mt_type_info mt_type_info_new(mt_type_kind kind) {
+  mt_type_info ti = {0};
 
   ti.kind = kind;
   // ti.params = vector_new(sizeof(mt_type_info_t));
@@ -12,7 +12,7 @@ mt_type_info_t mt_type_info_new(mt_type_kind kind) {
   return ti;
 }
 
-mt_object* mt_obj_new(mt_type_info_t typeinfo) {
+mt_object* mt_obj_new(mt_type_info typeinfo) {
   mt_object* obj = calloc(1, sizeof(mt_object));
 
   obj->typeinfo = typeinfo;

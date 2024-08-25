@@ -2,9 +2,8 @@
 
 #include "alert.h"
 #include "types.h"
+#include "node.h"
 #include "lexer.h"
-#include "parser.h"
-#include "eval.h"
 
 typedef enum {
   // unknown character on source code
@@ -26,8 +25,8 @@ typedef struct mt_error_tag {
   char const* msg;
 
   size_t position;
-  token_t* token;
-  mt_node_t* node;
+  mt_token* token;
+  mt_node* node;
 
   struct mt_error_tag* _next;
 } mt_error;
@@ -35,10 +34,10 @@ typedef struct mt_error_tag {
 mt_error* mt_new_error(mt_err_kind_t kind, char const* msg, size_t pos);
 
 mt_error* mt_new_error_from_token(mt_err_kind_t kind, char const* msg,
-                                  token_t* token);
+                                  mt_token* token);
 
 mt_error* mt_new_error_from_node(mt_err_kind_t kind, char const* msg,
-                                 mt_node_t* node);
+                                 mt_node* node);
 
 void mt_error_emit(mt_error* err);
 
@@ -47,7 +46,7 @@ void mt_abort_with(mt_error* err) __attribute__((__noreturn__));
 
 typedef struct mtdriver mtdriver;
 struct mtdriver {
-  source_t* source;
+  source_file* source;
   mtlexer* lexer;
 };
 
@@ -60,7 +59,7 @@ void driver_free(mtdriver* dr);
 int driver_main(mtdriver* dr, int argc, char** argv);
 
 // get the current compiling source
-source_t* driver_get_current_source(mtdriver* dr);
+source_file* driver_get_current_source(mtdriver* dr);
 
 void metro_init();
 void metro_exit();

@@ -9,6 +9,8 @@
 #include "metro.h"
 #include "utf-convert.h"
 
+#include "object.h"
+
 static char* punctuaters[] = {
     "<<=", ">>=", "<<", ">>", "<=", ">=", "==", "!=", "..", "&&", "||", "->",
     "<",   ">",   "+",  "-",  "/",  "*",  "%",  "=",  ";",  ":",  ",",  ".",
@@ -18,9 +20,9 @@ static char* punctuaters[] = {
 static size_t const punctuaters_size =
     sizeof(punctuaters) / sizeof(char const*);
 
-token_t* token_new(token_kind_t kind, token_t* prev, char* str, size_t len,
-                   size_t pos) {
-  token_t* tok = calloc(1, sizeof(token_t));
+mt_token* token_new(mt_token_kind kind, mt_token* prev, char* str, size_t len,
+                    size_t pos) {
+  mt_token* tok = calloc(1, sizeof(mt_token));
 
   tok->kind = kind;
   tok->prev = prev;
@@ -35,44 +37,7 @@ token_t* token_new(token_kind_t kind, token_t* prev, char* str, size_t len,
   return tok;
 }
 
-source_t* source_new(char* path) {
-  FILE* fp = fopen(path, "r");
-
-  if (fp == NULL) {
-    fprintf(stderr, "cannot open '%s'", path);
-    return NULL;
-  }
-
-  source_t* s = calloc(1, sizeof(source_t));
-  s->path = path;
-
-  fseek(fp, 0, SEEK_END);
-
-  s->length = s->size = ftell(fp);
-
-  s->data = malloc(s->size + 2);
-
-  fseek(fp, 0, SEEK_SET);
-
-  if (fread(s->data, s->size, 1, fp) != 1)
-    abort();
-
-  if (s->size == 0 || s->data[s->size - 1] != '\n')
-    s->data[s->size++] = '\n';
-
-  s->data[s->size] = 0;
-
-  fclose(fp);
-
-  return s;
-}
-
-void source_free(source_t* s) {
-  free(s->data);
-  free(s);
-}
-
-mtlexer* lexer_new(source_t* src) {
+mtlexer* lexer_new(source_file* src) {
   mtlexer* lexer = calloc(1, sizeof(mtlexer));
 
   lexer->src = src;
@@ -85,7 +50,7 @@ mtlexer* lexer_new(source_t* src) {
 }
 
 void lexer_free(mtlexer* lx) {
-  source_free(lx->src);
+  source_file_free(lx->src);
   free(lx);
 }
 
@@ -159,12 +124,12 @@ static size_t lx_pass(mtlexer* lx, char* ranges) {
   return passed;
 }
 
-static token_t* lx_eat_punctuater(mtlexer* lx, token_t* prev) {
+static mt_token* lx_eat_punctuater(mtlexer* lx, mt_token* prev) {
   for (size_t i = 0; i < punctuaters_size; i++) {
     size_t len = strlen(punctuaters[i]);
 
     if (lx_match(lx, punctuaters[i], len)) {
-      token_t* tok =
+      mt_token* tok =
           token_new(TOK_PUNCTUATER, prev, punctuaters[i], len, lx->position);
 
       lx->position += len;
@@ -176,9 +141,9 @@ static token_t* lx_eat_punctuater(mtlexer* lx, token_t* prev) {
   return NULL;
 }
 
-token_t* lexer_lex(mtlexer* lx) {
-  token_t top = {};
-  token_t* cur = &top;
+mt_token* lexer_lex(mtlexer* lx) {
+  mt_token top = {};
+  mt_token* cur = &top;
 
   lx_pass_space(lx);
 
@@ -293,7 +258,7 @@ token_t* lexer_lex(mtlexer* lx) {
   token_new(TOK_END, cur, NULL, 0, 0);
 
   // set source pointer
-  for (token_t* t = top.next; t && t->next; t = t->next)
+  for (mt_token* t = top.next; t && t->next; t = t->next)
     t->src = lx->src;
 
   return top.next;

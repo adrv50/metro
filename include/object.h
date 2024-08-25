@@ -12,7 +12,7 @@
 //
 typedef struct {
   // type-info of object
-  mt_type_info_t typeinfo;
+  mt_type_info typeinfo;
 
   union {
     i64 vi;
@@ -28,7 +28,7 @@ typedef struct {
   };
 } mt_object;
 
-mt_object* mt_obj_new(mt_type_info_t typeinfo);
+mt_object* mt_obj_new(mt_type_info typeinfo);
 
 mt_object* mt_obj_new_int(i64 v);
 mt_object* mt_obj_new_float(double v);

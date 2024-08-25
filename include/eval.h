@@ -6,4 +6,4 @@
 void mt_eval_init(void);
 void mt_eval_exit(void);
 
-mt_object* mt_eval_evalfull(mt_node_t* node);
+mt_object* mt_eval_evalfull(mt_node* node);

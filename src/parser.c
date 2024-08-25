@@ -4,13 +4,13 @@
 #include "metro.h"
 
 typedef struct {
-  source_t* src;
-  token_t* list;
-  token_t* endtok;
-  token_t* cur;
+  source_file* src;
+  mt_token* list;
+  mt_token* endtok;
+  mt_token* cur;
 } parser_ctx;
 
-parser_ctx parser_new(source_t* src, token_t* list) {
+parser_ctx parser_new(source_file* src, mt_token* list) {
   parser_ctx ctx = {};
 
   ctx.src = src;
@@ -26,7 +26,7 @@ parser_ctx parser_new(source_t* src, token_t* list) {
 
 static parser_ctx ctx;
 
-static token_t* getcur() {
+static mt_token* getcur() {
   return ctx.cur;
 }
 
@@ -65,14 +65,14 @@ static void expect(char const* str) {
   next();
 }
 
-static mt_node_t* p_stmt();
-static mt_node_t* expect_block() {
+static mt_node* p_stmt();
+static mt_node* expect_block() {
   expect_keep("{");
   return p_stmt();
 }
 
-static token_t* expect_identifier() {
-  token_t* tok = getcur();
+static mt_token* expect_identifier() {
+  mt_token* tok = getcur();
 
   if (tok->kind != TOK_IDENTIFIER) {
     mt_abort_with(mt_new_error_from_token(ERR_UNEXPECTED_TOKEN,
@@ -83,8 +83,8 @@ static token_t* expect_identifier() {
   return tok;
 }
 
-static mt_node_t* expect_typename() {
-  mt_node_t* node = node_new(ND_TYPENAME);
+static mt_node* expect_typename() {
+  mt_node* node = node_new(ND_TYPENAME);
 
   node->tok = expect_identifier();
 
@@ -96,10 +96,10 @@ static mt_node_t* expect_typename() {
   return node;
 }
 
-static mt_node_t* p_expr();
-static mt_node_t* p_factor() {
-  token_t* tok = getcur();
-  mt_node_t* node;
+static mt_node* p_expr();
+static mt_node* p_factor() {
+  mt_token* tok = getcur();
+  mt_node* node;
 
   next();
 
@@ -141,9 +141,9 @@ static mt_node_t* p_factor() {
   return node;
 }
 
-static mt_node_t* p_mul() {
-  mt_node_t* x = p_factor();
-  token_t* tok;
+static mt_node* p_mul() {
+  mt_node* x = p_factor();
+  mt_token* tok;
 
   while (check()) {
     tok = getcur();
@@ -159,9 +159,9 @@ static mt_node_t* p_mul() {
   return x;
 }
 
-static mt_node_t* p_add() {
-  mt_node_t* x = p_mul();
-  token_t* tok;
+static mt_node* p_add() {
+  mt_node* x = p_mul();
+  mt_token* tok;
 
   while (check()) {
     tok = getcur();
@@ -177,15 +177,15 @@ static mt_node_t* p_add() {
   return x;
 }
 
-static mt_node_t* p_expr() {
+static mt_node* p_expr() {
   return p_add();
 }
 
-static mt_node_t* p_stmt() {
-  mt_node_t* node = NULL;
+static mt_node* p_stmt() {
+  mt_node* node = NULL;
   bool closed = false;
 
-  token_t* token = getcur();
+  mt_token* token = getcur();
 
   //
   // block
@@ -223,8 +223,8 @@ static mt_node_t* p_stmt() {
     node->name = token->str;
     node->len = token->len;
 
-    mt_node_t** type = node_append(node, NULL);
-    mt_node_t** init = node_append(node, NULL);
+    mt_node** type = node_append(node, NULL);
+    mt_node** init = node_append(node, NULL);
 
     if (eat(":"))
       *type = expect_typename();
@@ -270,8 +270,8 @@ static mt_node_t* p_stmt() {
   return node;
 }
 
-static mt_node_t* p_top() {
-  token_t* tok = getcur();
+static mt_node* p_top() {
+  mt_token* tok = getcur();
 
   //
   //  enum    :=  "enum" <name: ident> "{"
@@ -298,28 +298,27 @@ static mt_node_t* p_top() {
   //    "fn" <name: ident>
   //      "(" params... ")" ("->" <rettype: type>)? <block>
   //
-  //  layout:
-  //    name, len     = name
+  //  layout://    name, len     = name
   //    child[0]      = return type
-  //    child[1]      = block
+  //    child[1]      = bloc
   //    child[2 <=]   = params
   //
   else if (eat("fn")) {
-    mt_node_t* func = node_new_with_token(ND_FUNCTION, tok);
+    mt_node* func = node_new_with_token(ND_FUNCTION, tok);
 
     tok = expect_identifier();
 
     func->name = tok->str;
     func->len = tok->len;
 
-    mt_node_t** rettype = node_append(func, NULL);
-    mt_node_t** block = node_append(func, NULL);
+    mt_node** rettype = node_append(func, NULL);
+    mt_node** block = node_append(func, NULL);
 
     expect("(");
 
     if (!eat(")")) {
       do {
-        mt_node_t* param = *node_append(
+        mt_node* param = *node_append(
             func, node_new_with_token(ND_PARAM, expect_identifier()));
 
         expect(":");
@@ -348,10 +347,10 @@ static mt_node_t* p_top() {
   return p_stmt();
 }
 
-mt_node_t* parser_parse(source_t* src, token_t* toklist) {
+mt_node* parser_parse(source_file* src, mt_token* toklist) {
   ctx = parser_new(src, toklist);
 
-  mt_node_t* nd = node_new(ND_PROGRAM);
+  mt_node* nd = node_new(ND_PROGRAM);
 
   while (check()) {
     node_append(nd, p_top());

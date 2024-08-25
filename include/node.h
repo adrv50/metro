@@ -2,9 +2,10 @@
 
 #include "token.h"
 #include "vector.h"
+#include "object.h"
 
 #define nd_get_child(_ND, _INDEX)                                              \
-  (vector_get_as(mt_node_t*, (_ND)->child, _INDEX))
+  (vector_get_as(mt_node*, (_ND)->child, _INDEX))
 
 #define nd_lhs(_ND) nd_get_child(_ND, 0)
 #define nd_rhs(_ND) nd_get_child(_ND, 1)
@@ -77,9 +78,9 @@ enum {
 
 typedef struct __attribute__((__packed__)) {
   mt_node_kind kind;
-  token_t* tok;
+  mt_token* tok;
 
-  vector* child; // vector<mt_node_t*>
+  vector* child; // vector<mt_node*>
 
   char* name;
   size_t len;
@@ -94,16 +95,18 @@ typedef struct __attribute__((__packed__)) {
     // when self is ND_TYPENAME
     bool type_is_const;
   };
-} mt_node_t;
 
-mt_node_t* node_new(mt_node_kind kind);
-mt_node_t* node_new_with_token(mt_node_kind k, token_t* tok);
-mt_node_t* node_new_with_lr(mt_node_kind k, token_t* tok, mt_node_t* lhs,
-                            mt_node_t* rhs);
-void node_free(mt_node_t* node);
+} mt_node;
 
-mt_node_t** node_append(mt_node_t* node, mt_node_t* item);
+mt_node* node_new(mt_node_kind kind);
+mt_node* node_new_with_token(mt_node_kind k, mt_token* tok);
+mt_node* node_new_with_lr(mt_node_kind k, mt_token* tok, mt_node* lhs,
+                          mt_node* rhs);
 
-bool node_is_same_name(mt_node_t* node, char const* name);
+void node_free(mt_node* node);
 
-void print_node(mt_node_t* nd);
+mt_node** node_append(mt_node* node, mt_node* item);
+
+bool node_is_same_name(mt_node* node, char const* name);
+
+void print_node(mt_node* nd);

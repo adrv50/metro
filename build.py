@@ -173,9 +173,12 @@ if err_sources != [ ]:
         border = "=" * 15
         longborder = "=" * (32 + len(src.path))
 
-        xprint(COL_BOLD, COL_WHITE, border, src.path, border, COL_DEFAULT)
+        xprint(COL_BOLD, COL_WHITE, border, " " + 
+               COL_CYAN + src.path + COL_WHITE + " ", border, COL_DEFAULT)
+
         xprint(src.result.stderr)
-        xprint(COL_BOLD, COL_WHITE, longborder, COL_DEFAULT)
+
+        xprint(COL_BOLD, COL_WHITE, longborder, COL_DEFAULT, "\n")
 
     exit(1)
 

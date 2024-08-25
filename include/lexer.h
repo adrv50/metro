@@ -4,13 +4,12 @@
 #include "token.h"
 #include "source.h"
 
-typedef struct mtlexer mtlexer;
-struct mtlexer {
-  source_t* src;
+typedef struct {
+  source_file* src;
   size_t position;
   size_t length;
-};
+} mtlexer;
 
-mtlexer* lexer_new(source_t* src);
+mtlexer* lexer_new(source_file* src);
 void lexer_free(mtlexer* lx);
-token_t* lexer_lex(mtlexer* lx);
+mt_token* lexer_lex(mtlexer* lx);
