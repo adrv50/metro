@@ -1,9 +1,10 @@
 #pragma once
 
 #include "types.h"
+#include "object.h"
 #include "source.h"
 
-typedef u16 token_kind_t;
+typedef u8 mt_token_kind;
 
 enum {
   TOK_INT,
@@ -16,22 +17,20 @@ enum {
   TOK_END
 };
 
-typedef struct token_t token_t;
-struct token_t {
-  token_kind_t kind;
-  token_t* prev;
-  token_t* next;
+typedef struct mt_token mt_token;
+
+struct mt_token {
+  mt_token_kind kind;
+  struct mt_token* prev;
+  struct mt_token* next;
+
+  source_file* src;
   char* str;
   size_t len;
   size_t pos;
-  source_t* src;
 
-  union {
-    int val;
-    char val_c;
-    float val_f;
-  };
+  mt_object* value;
 };
 
-token_t* token_new(token_kind_t kind, token_t* prev, char* str, size_t len,
-                   size_t pos);
+mt_token* token_new(mt_token_kind kind, mt_token* prev, char* str,
+                    size_t len, size_t pos);

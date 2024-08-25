@@ -7,7 +7,8 @@
 #define VEC_INITIALIZE_COUNT 50
 
 static void* memcpyex(void* dest, void* src, size_t size) {
-  if (dest == src) return dest;
+  if (dest == src)
+    return dest;
 
   if (src < dest) {
     for (size_t i = 0; i < size; i++)
@@ -34,7 +35,8 @@ static void* vector_realloc(vector* v) {
 // v に対して要素を n 個追加できるかどうか確認して、
 // バッファが足りない場合は拡張する
 static void vector_make_buffer(vector* v, size_t n) {
-  if (v->count + n >= v->_actual_count / 2) vector_realloc(v);
+  if (v->count + n >= v->_actual_count / 2)
+    vector_realloc(v);
 }
 
 vector* vector_new(u16 type_width) {

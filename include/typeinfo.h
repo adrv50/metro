@@ -3,6 +3,8 @@
 #include "types.h"
 #include "vector.h"
 
+typedef uint8_t mt_type_kind;
+
 enum {
   TYPE_NONE,
   TYPE_INT,
@@ -13,11 +15,9 @@ enum {
   TYPE_VECTOR,
 };
 
-typedef u8 type_kind;
-
 typedef struct {
-  type_kind kind;
-  vector* params;
-} mt_type_info_t;
+  mt_type_kind kind;
+  vector* params; // vector<mt_type_info_t>
+} mt_type_info;
 
-mt_type_info_t make_typeinfo(type_kind kind);
+mt_type_info mt_type_info_new(mt_type_kind kind);

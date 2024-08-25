@@ -3,15 +3,14 @@
 
 #include "metro.h"
 
-typedef struct parser_ctx parser_ctx;
-struct parser_ctx {
-  source_t* src;
-  token_t* list;
-  token_t* endtok;
-  token_t* cur;
-};
+typedef struct {
+  source_file* src;
+  mt_token* list;
+  mt_token* endtok;
+  mt_token* cur;
+} parser_ctx;
 
-parser_ctx parser_new(source_t* src, token_t* list) {
+parser_ctx parser_new(source_file* src, mt_token* list) {
   parser_ctx ctx = {};
 
   ctx.src = src;
@@ -27,11 +26,17 @@ parser_ctx parser_new(source_t* src, token_t* list) {
 
 static parser_ctx ctx;
 
-static token_t* getcur() { return ctx.cur; }
+static mt_token* getcur() {
+  return ctx.cur;
+}
 
-static bool check() { return getcur()->kind != TOK_END; }
+static bool check() {
+  return getcur()->kind != TOK_END;
+}
 
-static void next() { ctx.cur = ctx.cur->next; }
+static void next() {
+  ctx.cur = ctx.cur->next;
+}
 
 static bool match(char const* str) {
   size_t len = strlen(str);
@@ -61,14 +66,14 @@ static void expect(char const* str) {
   next();
 }
 
-static node_t* p_stmt();
-static node_t* expect_block() {
+static mt_node* p_stmt();
+static mt_node* expect_block() {
   expect_keep("{");
   return p_stmt();
 }
 
-static token_t* expect_identifier() {
-  token_t* tok = getcur();
+static mt_token* expect_identifier() {
+  mt_token* tok = getcur();
 
   if (tok->kind != TOK_IDENTIFIER) {
     mt_abort_with(mt_new_error_from_token(
@@ -79,8 +84,8 @@ static token_t* expect_identifier() {
   return tok;
 }
 
-static node_t* expect_typename() {
-  node_t* node = node_new(ND_TYPENAME);
+static mt_node* expect_typename() {
+  mt_node* node = node_new(ND_TYPENAME);
 
   node->tok = expect_identifier();
 
@@ -92,39 +97,54 @@ static node_t* expect_typename() {
   return node;
 }
 
-static node_t* p_factor() {
-  token_t* tok = getcur();
-  node_t* node;
+static mt_node* p_expr();
+static mt_node* p_factor() {
+  mt_token* tok = getcur();
+  mt_node* node;
 
   next();
 
   switch (tok->kind) {
-    case TOK_INT:
-    case TOK_FLOAT:
-    case TOK_CHAR:
-    case TOK_STRING:
-      node = node_new_with_token(ND_VALUE, tok);
-      break;
+  case TOK_INT:
+  case TOK_FLOAT:
+  case TOK_CHAR:
+  case TOK_STRING:
+    node = node_new_with_token(ND_VALUE, tok);
+    node->value = tok->value;
+    break;
 
-    case TOK_IDENTIFIER:
-      node = node_new_with_token(ND_VARIABLE, tok);
+  case TOK_IDENTIFIER: {
+    node = node_new_with_token(ND_VARIABLE, tok);
 
-      if (eat("(")) {
+    if (eat("(")) {
+      node->kind = ND_CALLFUNC;
+
+      node->name = node->tok->str;
+      node->len = node->tok->len;
+
+      if (!eat(")")) {
+        do {
+          node_append(node, p_expr());
+        } while (check() && eat(","));
+
+        expect(")");
       }
+    }
 
-      break;
+    break;
+  }
 
-    default:
-      mt_abort_with(mt_new_error_from_token(ERR_INVALID_SYNTAX,
-                                            "invalid syntax", tok));
+  default:
+    mt_abort_with(mt_new_error_from_token(ERR_INVALID_SYNTAX,
+                                          "invalid syntax", tok));
   }
 
   return node;
 }
 
-static node_t* p_mul() {
-  node_t* x = p_factor();
-  token_t* tok;
+static mt_node* p_mul() {
+  mt_node* x = p_factor();
+  mt_token* tok;
 
   while (check()) {
     tok = getcur();
@@ -140,9 +160,9 @@ static node_t* p_mul() {
   return x;
 }
 
-static node_t* p_add() {
-  node_t* x = p_mul();
-  token_t* tok;
+static mt_node* p_add() {
+  mt_node* x = p_mul();
+  mt_token* tok;
 
   while (check()) {
     tok = getcur();
@@ -158,19 +178,24 @@ static node_t* p_add() {
   return x;
 }
 
-static node_t* p_expr() { return p_add(); }
+static mt_node* p_expr() {
+  return p_add();
+}
 
-static node_t* p_stmt() {
-  node_t* node = NULL;
+static mt_node* p_stmt() {
+  mt_node* node = NULL;
   bool closed = false;
 
-  token_t* token = getcur();
+  mt_token* token = getcur();
 
+  //
   // block
+  //
   if (eat("{")) {
     node = node_new(ND_BLOCK);
 
-    if (eat("}")) return node;
+    if (eat("}"))
+      return node;
 
     while (check() && !(closed = eat("}"))) {
       node_append(node, p_stmt());
@@ -193,9 +218,27 @@ static node_t* p_stmt() {
   //    child[1]      --->  value   or null
   //
   else if (eat("let")) {
+    node = node_new(ND_VARDEF);
+
+    token = expect_identifier();
+    node->name = token->str;
+    node->len = token->len;
+
+    mt_node** type = node_append(node, NULL);
+    mt_node** init = node_append(node, NULL);
+
+    if (eat(":"))
+      *type = expect_typename();
+
+    if (eat("="))
+      *init = p_expr();
+
+    expect(";");
   }
 
-  // if
+  //
+  //  if-statement
+  //
   else if (eat("if")) {
     node = node_new(ND_IF);
 
@@ -208,14 +251,18 @@ static node_t* p_stmt() {
 
     // "else if" or "else {"
     if (eat("else")) {
-      if (!match("if")) expect_keep("{");
+      if (!match("if"))
+        expect_keep("{");
 
       node_append(node, p_stmt());
-    } else
+    }
+    else
       node_append(node, NULL);
   }
 
+  //
   // expr
+  //
   else {
     node = p_expr();
     expect(";");
@@ -224,8 +271,8 @@ static node_t* p_stmt() {
   return node;
 }
 
-static node_t* p_top() {
-  token_t* tok = getcur();
+static mt_node* p_top() {
+  mt_token* tok = getcur();
 
   //
   //  enum    :=  "enum" <name: ident> "{"
@@ -252,28 +299,27 @@ static node_t* p_top() {
   //    "fn" <name: ident>
   //      "(" params... ")" ("->" <rettype: type>)? <block>
   //
-  //  layout:
-  //    name, len     = name
+  //  layout://    name, len     = name
   //    child[0]      = return type
-  //    child[1]      = block
+  //    child[1]      = bloc
   //    child[2 <=]   = params
   //
   else if (eat("fn")) {
-    node_t* func = node_new_with_token(ND_FUNCTION, tok);
+    mt_node* func = node_new_with_token(ND_FUNCTION, tok);
 
     tok = expect_identifier();
 
     func->name = tok->str;
     func->len = tok->len;
 
-    node_t** rettype = node_append(func, NULL);
-    node_t** block = node_append(func, NULL);
+    mt_node** rettype = node_append(func, NULL);
+    mt_node** block = node_append(func, NULL);
 
     expect("(");
 
     if (!eat(")")) {
       do {
-        node_t* param = *node_append(
+        mt_node* param = *node_append(
             func, node_new_with_token(ND_PARAM, expect_identifier()));
 
         expect(":");
@@ -296,13 +342,16 @@ static node_t* p_top() {
     return func;
   }
 
+  //
+  // statement or expression
+  //
   return p_stmt();
 }
 
-node_t* parser_parse(source_t* src, token_t* toklist) {
+mt_node* parser_parse(source_file* src, mt_token* toklist) {
   ctx = parser_new(src, toklist);
 
-  node_t* nd = node_new(ND_PROGRAM);
+  mt_node* nd = node_new(ND_PROGRAM);
 
   while (check()) {
     node_append(nd, p_top());

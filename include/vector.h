@@ -4,8 +4,7 @@
 #include "types.h"
 
 #define vector_get(_V, _N) ((_V)->_data + (_V)->type_width * (_N))
-#define vector_get_as(_T, _V, _N) \
-  (*(_T*)((_V)->_data + (_V)->type_width * (_N)))
+#define vector_get_as(_T, _V, _N) (((_T*)((_V)->_data))[_N])
 
 #define vector_begin(_V) ((_V)->_data)
 #define vector_end(_V) ((_V)->_data + (_V)->type_width * (_V)->count)
@@ -13,9 +12,9 @@
 
 #define vector_size(_V) ((_V)->type_width * (_V)->count)
 
-typedef struct {
-  u16 type_width;  // size of the type of element
-  size_t count;    // elements count
+typedef struct vector_tag {
+  u16 type_width; // size of the type of element
+  size_t count;   // elements count
 
   size_t _actual_count;
   void* _data;

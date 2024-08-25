@@ -17,6 +17,13 @@
         "chrono": "c",
         "algorithm": "c",
         "compile.h": "c",
-        "errno.h": "c"
-    }
+        "errno.h": "c",
+        "token.h": "c",
+        "source.h": "c"
+    },
+
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": false,
+    "editor.formatOnType": false,
+
 }

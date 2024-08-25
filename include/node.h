@@ -2,9 +2,10 @@
 
 #include "token.h"
 #include "vector.h"
+#include "object.h"
 
-#define nd_get_child(_ND, _INDEX) \
-  (vector_get_as(node_t*, (_ND)->child, _INDEX))
+#define nd_get_child(_ND, _INDEX)                                    \
+  (vector_get_as(mt_node*, (_ND)->child, _INDEX))
 
 #define nd_lhs(_ND) nd_get_child(_ND, 0)
 #define nd_rhs(_ND) nd_get_child(_ND, 1)
@@ -18,31 +19,35 @@
 #define nd_func_param_count(n) (n->child->count - 2)
 #define nd_func_get_param(n, _i) nd_get_child(n, _i + 2)
 
-typedef u16 node_kind_t;
+typedef u8 mt_node_kind;
 
 enum {
-  ND_TYPENAME,     // type  :=  <name: ident> type_param? "const"?
-  ND_TYPE_PARAMS,  // type_param  := "<" type ("," type)* ">"
+  ND_TYPENAME,    // type  :=  <name: ident> type_param? "const"?
+  ND_TYPE_PARAMS, // type_param  := "<" type ("," type)* ">"
 
-  ND_VALUE,     // value    :=  (token)
-  ND_VARIABLE,  // ident    :=  TOK_IDENTIFIER
-  ND_CALLFUNC,  // callfunc :=  <ident> "(" <expr> ("," <expr>)* ")"
+  ND_VALUE,    // value    :=  (token)
+  ND_VARIABLE, // ident    :=  TOK_IDENTIFIER
+  ND_CALLFUNC, // callfunc :=  <ident> "(" <expr> ("," <expr>)* ")"
 
-  ND_MUL,  // *
-  ND_DIV,  // /
-  ND_MOD,  // %
+  _NDKIND_BEGIN_OF_LR_OP_EXPR_,
 
-  ND_ADD,  // +
-  ND_SUB,  // -
+  ND_MUL, // *
+  ND_DIV, // /
+  ND_MOD, // %
 
-  ND_LSHIFT,  // <<
-  ND_RSHIFT,  // >>
+  ND_ADD, // +
+  ND_SUB, // -
 
-  ND_EQUAL,         // ==
-  ND_BIGGER,        // <
-  ND_BIGGER_OR_EQ,  // <=
+  ND_LSHIFT, // <<
+  ND_RSHIFT, // >>
 
-  ND_ASSIGN,  // =
+  ND_EQUAL,        // ==
+  ND_BIGGER,       // <
+  ND_BIGGER_OR_EQ, // <=
+
+  _NDKIND_END_OF_LR_OP_EXPR_,
+
+  ND_ASSIGN, // =
 
   // vardef :=  "let" <name: ident> ":" <type> ("=" <expr>)?
   ND_VARDEF,
@@ -60,7 +65,7 @@ enum {
   ND_WHILE,
 
   // child = { type }
-  ND_PARAM,  // <name: ident> ":" <type>
+  ND_PARAM, // <name: ident> ":" <type>
 
   // child = { ret_type, params... }
   ND_FUNCTION,
@@ -68,32 +73,40 @@ enum {
   ND_ENUM,
   ND_STRUCT,
 
-  ND_PROGRAM,  // (root)
-
+  ND_PROGRAM, // (root)
 };
 
-typedef struct node_t node_t;
-struct node_t {
-  node_kind_t kind;
-  token_t* tok;
+typedef struct __attribute__((__packed__)) {
+  mt_node_kind kind;
+  mt_token* tok;
 
-  vector* child;  // vector<node_t*>
+  vector* child; // vector<mt_node>
 
   char* name;
   size_t len;
 
-  // flag when self is ND_TYPENAME
-  bool type_is_const;
-};
+  union {
+    // when ND_VALUE
+    mt_object* value;
 
-node_t* node_new(node_kind_t kind);
-node_t* node_new_with_token(node_kind_t k, token_t* tok);
-node_t* node_new_with_lr(node_kind_t k, token_t* tok, node_t* lhs,
-                         node_t* rhs);
-void node_free(node_t* node);
+    // ND_VARIABLE
+    size_t index;
 
-node_t** node_append(node_t* node, node_t* item);
+    // when self is ND_TYPENAME
+    bool type_is_const;
+  };
 
-bool node_is_same_name(node_t* node, char const* name);
+} mt_node;
 
-void print_node(node_t* nd);
+mt_node* node_new(mt_node_kind kind);
+mt_node* node_new_with_token(mt_node_kind k, mt_token* tok);
+mt_node* node_new_with_lr(mt_node_kind k, mt_token* tok, mt_node* lhs,
+                          mt_node* rhs);
+
+void node_free(mt_node* node);
+
+mt_node** node_append(mt_node* node, mt_node* item);
+
+bool node_is_same_name(mt_node* node, char const* name);
+
+void print_node(mt_node* nd);

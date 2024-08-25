@@ -1,12 +1,15 @@
-#include <stdio.h>
-#include <string.h>
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "alert.h"
 #include "lexer.h"
 #include "metro.h"
+#include "utf-convert.h"
+
+#include "object.h"
 
 static char* punctuaters[] = {
     "<<=", ">>=", "<<", ">>", "<=", ">=", "==", "!=", "..",
@@ -18,9 +21,9 @@ static char* punctuaters[] = {
 static size_t const punctuaters_size =
     sizeof(punctuaters) / sizeof(char const*);
 
-token_t* token_new(token_kind_t kind, token_t* prev, char* str,
-                   size_t len, size_t pos) {
-  token_t* tok = calloc(1, sizeof(token_t));
+mt_token* token_new(mt_token_kind kind, mt_token* prev, char* str,
+                    size_t len, size_t pos) {
+  mt_token* tok = calloc(1, sizeof(mt_token));
 
   tok->kind = kind;
   tok->prev = prev;
@@ -29,54 +32,13 @@ token_t* token_new(token_kind_t kind, token_t* prev, char* str,
   tok->len = len;
   tok->pos = pos;
 
-  if (prev) prev->next = tok;
+  if (prev)
+    prev->next = tok;
 
   return tok;
 }
 
-source_t* source_new(char* path) {
-  FILE* fp = fopen(path, "r");
-
-  if (fp == NULL) {
-    int err = errno;
-
-    switch (err) {
-      case ENOENT:
-        fprintf(stderr, "cannot open '%s'", path);
-        break;
-    }
-
-    return NULL;
-  }
-
-  source_t* s = calloc(1, sizeof(source_t));
-  s->path = path;
-
-  fseek(fp, 0, SEEK_END);
-  s->length = s->size = ftell(fp);
-
-  s->data = malloc(s->size + 2);
-
-  fseek(fp, 0, SEEK_SET);
-
-  if (fread(s->data, s->size, 1, fp) != 1) abort();
-
-  if (s->size == 0 || s->data[s->size - 1] != '\n')
-    s->data[s->size++] = '\n';
-
-  s->data[s->size] = 0;
-
-  fclose(fp);
-
-  return s;
-}
-
-void source_free(source_t* s) {
-  free(s->data);
-  free(s);
-}
-
-mtlexer* lexer_new(source_t* src) {
+mtlexer* lexer_new(source_file* src) {
   mtlexer* lexer = calloc(1, sizeof(mtlexer));
 
   lexer->src = src;
@@ -89,7 +51,7 @@ mtlexer* lexer_new(source_t* src) {
 }
 
 void lexer_free(mtlexer* lx) {
-  source_free(lx->src);
+  source_file_free(lx->src);
   free(lx);
 }
 
@@ -106,7 +68,8 @@ static char* lx_cur_ptr(mtlexer* lx) {
 }
 
 static void lx_pass_space(mtlexer* lx) {
-  while (lx_check(lx) && isspace(lx_peek(lx))) lx->position++;
+  while (lx_check(lx) && isspace(lx_peek(lx)))
+    lx->position++;
 }
 
 static bool lx_match(mtlexer* lx, char* str, size_t len) {
@@ -162,13 +125,13 @@ static size_t lx_pass(mtlexer* lx, char* ranges) {
   return passed;
 }
 
-static token_t* lx_eat_punctuater(mtlexer* lx, token_t* prev) {
+static mt_token* lx_eat_punctuater(mtlexer* lx, mt_token* prev) {
   for (size_t i = 0; i < punctuaters_size; i++) {
     size_t len = strlen(punctuaters[i]);
 
     if (lx_match(lx, punctuaters[i], len)) {
-      token_t* tok = token_new(TOK_PUNCTUATER, prev, punctuaters[i],
-                               len, lx->position);
+      mt_token* tok = token_new(TOK_PUNCTUATER, prev, punctuaters[i],
+                                len, lx->position);
 
       lx->position += len;
 
@@ -179,9 +142,9 @@ static token_t* lx_eat_punctuater(mtlexer* lx, token_t* prev) {
   return NULL;
 }
 
-token_t* lexer_lex(mtlexer* lx) {
-  token_t top = {};
-  token_t* cur = &top;
+mt_token* lexer_lex(mtlexer* lx) {
+  mt_token top = {};
+  mt_token* cur = &top;
 
   lx_pass_space(lx);
 
@@ -192,12 +155,20 @@ token_t* lexer_lex(mtlexer* lx) {
 
     // comment line
     if (lx_eatstr(lx, "//", 2)) {
-      while (lx_check(lx) && lx_peek(lx) != '\n') lx->position++;
+      while (lx_check(lx) && lx_peek(lx) != '\n')
+        lx->position++;
     }
 
     // comment block
     else if (lx_eatstr(lx, "/*", 2)) {
-      while (lx_check(lx) && !lx_eatstr(lx, "*/", 2)) lx->position++;
+      while (lx_check(lx) && !lx_eatstr(lx, "*/", 2))
+        lx->position++;
+    }
+
+    // hexadecimal
+    else if (lx_eatstr(lx, "0x", 2) || lx_eatstr(lx, "0X", 2)) {
+      cur = token_new(TOK_INT, cur, str, lx_pass(lx, "09afAF"), pos);
+      cur->value = mt_obj_new_int(strtoll(str, NULL, 16));
     }
 
     // int or float
@@ -209,36 +180,68 @@ token_t* lexer_lex(mtlexer* lx) {
         cur->kind = TOK_FLOAT;
         cur->len += lx_pass(lx, "09") + lx_eat(lx, 'f') + 1;
 
-        cur->val_f = atof(str);
+        cur->value = mt_obj_new_float(strtod(str, NULL));
       }
       // int
       else {
-        cur->val = atoi(str);
+        cur->value = mt_obj_new_int(strtoll(str, NULL, 10));
       }
     }
 
     // char
     else if (lx_eat(lx, '\'')) {
-      bool closed;
+      bool closed = false;
 
-      while (!(closed = lx_peek(lx) == '\'')) lx->position++;
+      while (!(closed = lx_peek(lx) == '\''))
+        lx->position++;
 
       if (!closed) {
         mt_abort_with(mt_new_error(ERR_INVALID_TOKEN,
                                    "not closed literal", pos));
       }
+
+      cur = token_new(TOK_CHAR, cur, str, lx->position - pos, pos);
+
+      todo_impl;
+      cur->value = mt_obj_new_char(0);
     }
 
     // string
     else if (lx_eat(lx, '"')) {
-      bool closed;
+      bool closed = false;
 
-      while (!(closed = lx_eat(lx, '"'))) lx->position++;
+      while (lx_check(lx) && !(closed = lx_eat(lx, '"')))
+        lx->position++;
 
       if (!closed) {
         mt_abort_with(mt_new_error(ERR_INVALID_TOKEN,
                                    "not closed literal", pos));
       }
+
+      cur = token_new(TOK_STRING, cur, str + 1,
+                      lx->position - pos - 2, pos);
+
+      // make null-terminated string by cur->str
+      char buf[cur->len + 1];
+
+      memcpy(buf, cur->str, cur->len);
+      buf[cur->len] = 0;
+
+      // get correctly length of cur->str
+      size_t const length = get_count_of_utf8(buf);
+
+      cur->value = mt_obj_new(mt_type_info_new(TYPE_STRING));
+      cur->value->vs = vector_new_with_count(sizeof(u16), length);
+
+      utf8_to_utf16(cur->value->vs->_data, (u8*)buf, length);
+
+      // alert;
+      // alertfmt("%zu", length);
+      // alertfmt("cur->str = \"%.*s\"", (int)cur->len, cur->str);
+
+      // for (size_t i = 0; i <= length; i++) {
+      //   alertfmt("%04X", vector_get_as(u16, cur->value->vs, i));
+      // }
     }
 
     // identifier
@@ -259,7 +262,7 @@ token_t* lexer_lex(mtlexer* lx) {
   token_new(TOK_END, cur, NULL, 0, 0);
 
   // set source pointer
-  for (token_t* t = top.next; t && t->next; t = t->next)
+  for (mt_token* t = top.next; t && t->next; t = t->next)
     t->src = lx->src;
 
   return top.next;

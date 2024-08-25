@@ -4,72 +4,75 @@
 #include "alert.h"
 #include "node.h"
 
-node_t* node_new(node_kind_t kind) {
+mt_node* node_new(mt_node_kind kind) {
   return node_new_with_lr(kind, NULL, NULL, NULL);
 }
 
-node_t* node_new_with_token(node_kind_t kind, token_t* tok) {
+mt_node* node_new_with_token(mt_node_kind kind, mt_token* tok) {
   return node_new_with_lr(kind, tok, NULL, NULL);
 }
 
-node_t* node_new_with_lr(node_kind_t kind, token_t* tok, node_t* lhs,
-                         node_t* rhs) {
-  node_t* nd = calloc(1, sizeof(node_t));
+mt_node* node_new_with_lr(mt_node_kind kind, mt_token* tok,
+                          mt_node* lhs, mt_node* rhs) {
+  mt_node* nd = calloc(1, sizeof(mt_node));
 
   nd->kind = kind;
   nd->tok = tok;
-  nd->child = vector_new(sizeof(node_t*));
+  nd->child = vector_new(sizeof(mt_node*));
 
-  if (lhs) node_append(nd, lhs);
+  if (lhs)
+    node_append(nd, lhs);
 
-  if (rhs) node_append(nd, rhs);
+  if (rhs)
+    node_append(nd, rhs);
 
   return nd;
 }
 
-void node_free(node_t* node) {
-  if (!node) return;
+void node_free(mt_node* node) {
+  if (!node)
+    return;
 
   for (size_t i = 0; i < node->child->count; i++) {
-    node_free(*(node_t**)vector_get(node->child, i));
+    node_free(*(mt_node**)vector_get(node->child, i));
   }
 
   vector_free(node->child);
   free(node);
 }
 
-node_t** node_append(node_t* node, node_t* item) {
-  return (node_t**)vector_append(node->child, &item);
+mt_node** node_append(mt_node* node, mt_node* item) {
+  return (mt_node**)vector_append(node->child, &item);
 }
 
-bool node_is_same_name(node_t* node, char const* name) {
+bool node_is_same_name(mt_node* node, char const* name) {
   size_t len = strlen(name);
 
   return node->len == len && strncmp(node->name, name, len) == 0;
 }
 
-void print_node(node_t* node) {
+void print_node(mt_node* node) {
   switch (node->kind) {
-    case ND_VALUE:
-    case ND_VARIABLE:
-      printf("%.*s", (int)node->tok->len, node->tok->str);
-      break;
+  case ND_VALUE:
+  case ND_VARIABLE:
+    printf("%.*s", (int)node->tok->len, node->tok->str);
+    break;
 
-    case ND_ADD:
-    case ND_SUB:
-    case ND_MUL:
-    case ND_DIV:
-      print_node(nd_lhs(node));
-      printf(" %.*s ", (int)node->tok->len, node->tok->str);
-      print_node(nd_rhs(node));
-      break;
+  case ND_ADD:
+  case ND_SUB:
+  case ND_MUL:
+  case ND_DIV:
+    print_node(nd_lhs(node));
+    printf(" %.*s ", (int)node->tok->len, node->tok->str);
+    print_node(nd_rhs(node));
+    break;
 
-    case ND_PROGRAM:
-      for (size_t i = 0; i < node->child->count; i++) {
-        print_node(nd_get_child(node, i));
-        puts("");
-      }
+  case ND_PROGRAM:
+    for (size_t i = 0; i < node->child->count; i++) {
+      print_node(nd_get_child(node, i));
+      puts("");
+    }
 
-      break;
+    break;
   }
 }
