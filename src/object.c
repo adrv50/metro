@@ -93,6 +93,9 @@ bool mt_obj_is_numeric(mt_object* obj) {
 }
 
 void print_object(mt_object* obj) {
+  if (!obj)
+    return;
+
   switch (obj->typeinfo.kind) {
   case TYPE_INT:
     printf("%lu", obj->vi);

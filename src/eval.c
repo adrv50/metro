@@ -36,10 +36,98 @@ static inline mt_object* to_float(mt_object* int_obj) {
     todo_impl;
   }
 
+  int_obj->typeinfo.kind = TYPE_FLOAT;
+
   return int_obj;
 }
 
-// add
+//
+// -------------------------
+//  ND_MUL
+// -------------------------
+//
+static mt_object* mul_object(mt_object* left, mt_object* right) {
+
+  //
+  // str * int
+  if (IS_STRING(left) && IS_INT(right)) {
+  _label_mul_str_int:
+    mt_object* strobj = mt_obj_new_string();
+
+    for (int i = 0; i < right->vi; i++)
+      vector_append_vector(strobj->vs, left->vs);
+
+    return strobj;
+  }
+
+  //
+  // int * str ( --> swap and goto str*int )
+  else if (IS_INT(left) && IS_STRING(right)) {
+    swap(left, right);
+    goto _label_mul_str_int;
+  }
+
+  else {
+    todo_impl;
+  }
+
+  return left;
+}
+
+//
+// -------------------------
+//  ND_DIV
+// -------------------------
+//
+static mt_object* div_object(mt_object* left, mt_object* right) {
+
+  switch (left->typeinfo.kind) {
+  case TYPE_FLOAT:
+    if (IS_FLOAT(right))
+      left->vf /= right->vf;
+    else if (IS_INT(right))
+      left->vf /= (float)right->vi;
+    else
+      todo_impl;
+
+    break;
+
+  case TYPE_INT:
+    if (IS_FLOAT(right))
+      left->vi /= (int)right->vf;
+    else if (IS_INT(right))
+      left->vi /= right->vi;
+    else
+      todo_impl;
+
+    break;
+
+  default:
+    todo_impl;
+  }
+
+  return left;
+}
+
+//
+// -------------------------
+//  ND_MOD
+// -------------------------
+//
+static mt_object* mod_object(mt_object* left, mt_object* right) {
+
+  debug(assert(IS_INT(left) && IS_INT(right)));
+
+  left->vi %= right->vi;
+
+  return left;
+}
+
+//
+// -------------------------
+//  ND_ADD
+// -------------------------
+//
 static mt_object* add_object(mt_object* left, mt_object* right) {
 
   //
@@ -47,10 +135,14 @@ static mt_object* add_object(mt_object* left, mt_object* right) {
   if (mt_obj_is_numeric(left) && mt_obj_is_numeric(right)) {
     //
     // どちらかが Float であれば、両方 Float にする
-    if (left->typeinfo.kind == TYPE_FLOAT)
-      right = to_float(right);
-    else if (right->typeinfo.kind == TYPE_FLOAT)
-      left = to_float(left);
+    if (left->typeinfo.kind == TYPE_FLOAT) {
+      if (right->typeinfo.kind != TYPE_FLOAT)
+        right = to_float(right);
+    }
+    else if (right->typeinfo.kind == TYPE_FLOAT) {
+      if (left->typeinfo.kind != TYPE_FLOAT)
+        left = to_float(left);
+    }
 
     assert(left->typeinfo.kind == right->typeinfo.kind);
 
@@ -78,48 +170,81 @@ static mt_object* add_object(mt_object* left, mt_object* right) {
   return left;
 }
 
-static mt_object* mul_object(mt_object* left, mt_object* right) {
+//
+// -------------------------
+//  ND_SUB
+// -------------------------
+//
+static mt_object* sub_object(mt_object* left, mt_object* right) {
 
   //
-  // str * int
-  if (IS_STRING(left) && IS_INT(right)) {
-  _label_mul_str_int:
-    mt_object* strobj = mt_obj_new_string();
+  // どっちも数値型
+  if (mt_obj_is_numeric(left) && mt_obj_is_numeric(right)) {
+    //
+    // どちらかが Float であれば、両方 Float にする
+    if (left->typeinfo.kind == TYPE_FLOAT) {
+      if (right->typeinfo.kind != TYPE_FLOAT)
+        right = to_float(right);
+    }
+    else if (right->typeinfo.kind == TYPE_FLOAT) {
+      if (left->typeinfo.kind != TYPE_FLOAT)
+        left = to_float(left);
+    }
 
-    for (int i = 0; i < right->vi; i++)
-      vector_append_vector(strobj->vs, left->vs);
+    assert(left->typeinfo.kind == right->typeinfo.kind);
 
-    return strobj;
+    switch (left->typeinfo.kind) {
+    case TYPE_INT:
+      left->vi -= right->vi;
+      break;
+
+    case TYPE_FLOAT:
+      left->vf -= right->vf;
+      break;
+    }
   }
 
-  //
-  // int * str ( --> swap and goto str*int )
-  else if (IS_INT(left) && IS_STRING(right)) {
-    swap(left, right);
-    goto _label_mul_str_int;
+  else {
+    todo_impl;
   }
 
   return left;
 }
 
+//
+// ============================================
+//  Evaluate a nodes
+// ============================================
+//
 static mt_object* evaluate(mt_node* node) {
-  typedef mt_object* (*expr_fn_ptr_t)(mt_object*, mt_object*);
+  typedef mt_object* (*expr_fp_t)(mt_object*, mt_object*);
 
+  // clang-format off
   static int* case_labels[] = {
-      [ND_VALUE] = &&case_value,
-      [ND_PROGRAM] = &&case_program,
-      [ND_VARDEF] = &&case_vardef,
-      [ND_BLOCK] = &&case_block,
+    [ND_VALUE]      = &&case_value,
+    [ND_VARIABLE]   = &&case_variable,
+    [ND_CALLFUNC]   = &&case_callfunc,
+    
+    [ND_ASSIGN]     = &&case_assign,
+    
+    [ND_VARDEF]     = &&case_vardef,
+    [ND_BLOCK]      = &&case_block,
+
+    [ND_FUNCTION]   = &&case_skip,
+    [ND_ENUM]       = &&case_skip,
+    [ND_STRUCT]     = &&case_skip,
+    
+    [ND_PROGRAM]    = &&case_program,
   };
 
-  static expr_fn_ptr_t op_expr_labels[] = {
-      [ND_MUL] = mul_object,
-      [ND_ADD] = add_object,
+  static expr_fp_t op_expr_labels[] = {
+    [ND_MUL] = mul_object,
+    [ND_DIV] = div_object,
+    [ND_MOD] = mod_object,
+    [ND_ADD] = add_object,
+    [ND_SUB] = sub_object,
   };
-
-  mt_object* result = NULL;
-
-  // alertfmt("%hhd\n", node->kind);
+  // clang-format on
 
   if (node->kind >= _NDKIND_BEGIN_OF_LR_OP_EXPR_ &&
       node->kind <= _NDKIND_END_OF_LR_OP_EXPR_)
@@ -132,14 +257,49 @@ static mt_object* evaluate(mt_node* node) {
 case_value:
   return node->value;
 
-case_program:
-  for (size_t i = 0; i < node->child->count; i++)
-    result = evaluate(nd_get_child(node, i));
+case_variable:
+  todo_impl;
 
-  return result;
+//
+// ND_CALLFUNC
+//
+case_callfunc : {
+  mt_object* args[node->child->count];
+
+  for (size_t i = 0; i < node->child->count; i++)
+    args[i] = evaluate(nd_get_child(node, i));
+
+  //
+  // println
+  if (node->len >= 7 && strncmp(node->name, "println", 7) == 0) {
+    for (size_t i = 0; i < node->child->count; i++)
+      print_object(args[i]);
+
+    puts("");
+
+    return NULL;
+  }
+
+  todo_impl;
+}
+
+case_assign:
+  todo_impl;
+
+case_block:
+case_program : {
+  mt_object* res;
+
+  for (size_t i = 0; i < node->child->count; i++)
+    res = evaluate(nd_get_child(node, i));
+
+  return res;
+}
 
 case_vardef:
-case_block:
+  return NULL;
+
+case_skip:
   return NULL;
 
 case_lr_operator_expr:

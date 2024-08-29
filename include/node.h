@@ -10,6 +10,8 @@
 #define nd_lhs(_ND) nd_get_child(_ND, 0)
 #define nd_rhs(_ND) nd_get_child(_ND, 1)
 
+#define nd_callfunc_callee(n) nd_get_child(n, 0)
+
 #define nd_if_cond(n) nd_get_child(n, 0)
 #define nd_if_true(n) nd_get_child(n, 1)
 #define nd_if_false(n) nd_get_child(n, 2)

@@ -165,8 +165,8 @@ int driver_main(mtdriver* dr, int argc, char** argv) {
 
   // printf("%ld\n", result->vi);
 
-  print_object(result);
-  puts("");
+  // print_object(result);
+  // puts("");
 
   // compiler_compile_full(nd);
 
