@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "alert.h"
 #include "object.h"
 #include "utf-convert.h"
 
@@ -18,6 +20,13 @@ mt_object* mt_obj_new(mt_type_info typeinfo) {
   obj->typeinfo = typeinfo;
 
   return obj;
+}
+
+void mt_obj_force_free(mt_object* obj) {
+  if (IS_STRING(obj) || IS_VECTOR(obj))
+    vector_free(obj->vs);
+
+  free(obj);
 }
 
 mt_object* mt_obj_new_int(i64 v) {
@@ -52,7 +61,7 @@ mt_object* mt_obj_new_char(u16 v) {
   return obj;
 }
 
-mt_object* mt_obj_new_string() {
+mt_object* mt_obj_new_string(void) {
   mt_object* obj = mt_obj_new(mt_type_info_new(TYPE_STRING));
 
   obj->vs = vector_new(sizeof(u16));
@@ -60,12 +69,17 @@ mt_object* mt_obj_new_string() {
   return obj;
 }
 
-mt_object* mt_obj_new_vector() {
+mt_object* mt_obj_new_vector(void) {
   mt_object* obj = mt_obj_new(mt_type_info_new(TYPE_VECTOR));
 
   obj->vv = vector_new(sizeof(mt_object*));
 
   return obj;
+}
+
+mt_object* mt_obj_clone(mt_object* obj) {
+
+  todo_impl;
 }
 
 bool mt_obj_is_numeric(mt_object* obj) {
@@ -103,7 +117,8 @@ void print_object(mt_object* obj) {
     size_t const buflen = obj->vs->count * 3;
     char buf[buflen];
 
-    size_t res = utf16_to_utf8((u8*)buf, (u16*)obj->vs->_data, buflen);
+    size_t res =
+        utf16_to_utf8((u8*)buf, (u16*)obj->vs->_data, buflen);
 
     buf[res] = 0;
 

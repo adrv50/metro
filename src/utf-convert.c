@@ -1,5 +1,6 @@
 //
-//  used codes of libctru.
+// used codes of libctru.
+// https://github.com/devkitPro/libctru/tree/master/libctru/source/util/utf
 //
 
 #include <string.h>

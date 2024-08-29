@@ -3,14 +3,11 @@
 #include <string.h>
 #include <assert.h>
 
+#include "utils.h"
 #include "alert.h"
 #include "eval.h"
 #include "vector.h"
 #include "utf-convert.h"
-
-#define IS_INT(obj) (obj->typeinfo.kind == TYPE_INT)
-#define IS_FLOAT(obj) (obj->typeinfo.kind == TYPE_FLOAT)
-#define IS_STRING(obj) (obj->typeinfo.kind == TYPE_STRING)
 
 // static bool check_valid_operator(mt_node_kind kind, mt_type_info_t
 // left,
@@ -81,7 +78,33 @@ static mt_object* add_object(mt_object* left, mt_object* right) {
   return left;
 }
 
+static mt_object* mul_object(mt_object* left, mt_object* right) {
+
+  //
+  // str * int
+  if (IS_STRING(left) && IS_INT(right)) {
+  _label_mul_str_int:
+    mt_object* strobj = mt_obj_new_string();
+
+    for (int i = 0; i < right->vi; i++)
+      vector_append_vector(strobj->vs, left->vs);
+
+    return strobj;
+  }
+
+  //
+  // int * str ( --> swap and goto str*int )
+  else if (IS_INT(left) && IS_STRING(right)) {
+    swap(left, right);
+    goto _label_mul_str_int;
+  }
+
+  return left;
+}
+
 static mt_object* evaluate(mt_node* node) {
+  typedef mt_object* (*expr_fn_ptr_t)(mt_object*, mt_object*);
+
   static int* case_labels[] = {
       [ND_VALUE] = &&case_value,
       [ND_PROGRAM] = &&case_program,
@@ -89,9 +112,9 @@ static mt_object* evaluate(mt_node* node) {
       [ND_BLOCK] = &&case_block,
   };
 
-  static int* op_expr_labels[] = {
-      [ND_MUL] = &&expr_mul,
-      [ND_ADD] = &&expr_add,
+  static expr_fn_ptr_t op_expr_labels[] = {
+      [ND_MUL] = mul_object,
+      [ND_ADD] = add_object,
   };
 
   mt_object* result = NULL;
@@ -120,20 +143,10 @@ case_block:
   return NULL;
 
 case_lr_operator_expr:
-
-  mt_object* left = evaluate(nd_lhs(node));
-  mt_object* right = evaluate(nd_rhs(node));
-
   debug(assert(op_expr_labels[node->kind] != 0));
 
-  goto* op_expr_labels[node->kind];
-
-expr_mul:
-
-expr_add:
-  add_object(left, right);
-
-  return left;
+  return op_expr_labels[node->kind](evaluate(nd_lhs(node)),
+                                    evaluate(nd_rhs(node)));
 }
 
 void mt_eval_init(void) {

@@ -89,7 +89,7 @@ typedef struct __attribute__((__packed__)) {
     // when ND_VALUE
     mt_object* value;
 
-    // ND_VARIABLE
+    // ND_VARIABLE (or expr)
     size_t index;
 
     // when self is ND_TYPENAME

@@ -12,6 +12,8 @@ typedef enum {
   // parser: invalid syntax
   ERR_INVALID_SYNTAX,
 
+  ERR_TYPE_MISMATCH,
+
   // parser: unexpected token
   ERR_UNEXPECTED_TOKEN,
 

@@ -2,13 +2,7 @@
 #include <string.h>
 
 #include "metro.h"
-
-typedef struct {
-  source_file* src;
-  mt_token* list;
-  mt_token* endtok;
-  mt_token* cur;
-} parser_ctx;
+#include "parser.h"
 
 parser_ctx parser_new(source_file* src, mt_token* list) {
   parser_ctx ctx = {};
