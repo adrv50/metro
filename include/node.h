@@ -7,17 +7,24 @@
 #define nd_get_child(_ND, _INDEX)                                    \
   (vector_get_as(mt_node*, (_ND)->child, _INDEX))
 
-#define nd_lhs(_ND) nd_get_child(_ND, 0)
-#define nd_rhs(_ND) nd_get_child(_ND, 1)
+#define _N0(N) nd_get_child(N, 0)
+#define _N1(N) nd_get_child(N, 1)
+#define _N2(N) nd_get_child(N, 2)
 
-#define nd_callfunc_callee(n) nd_get_child(n, 0)
+#define nd_lhs(n) _N0(n)
+#define nd_rhs(n) _N1(n)
 
-#define nd_if_cond(n) nd_get_child(n, 0)
-#define nd_if_true(n) nd_get_child(n, 1)
-#define nd_if_false(n) nd_get_child(n, 2)
+#define nd_callfunc_callee(n) _N0(n)
 
-#define nd_func_rettype(n) nd_get_child(n, 0)
-#define nd_func_block(n) nd_get_child(n, 1)
+#define nd_let_type(n) _N0(n)
+#define nd_let_init(n) _N1(n)
+
+#define nd_if_cond(n) _N0(n)
+#define nd_if_true(n) _N1(n)
+#define nd_if_false(n) _N2(n)
+
+#define nd_func_rettype(n) _N0(n)
+#define nd_func_block(n) _N1(n)
 #define nd_func_param_count(n) (n->child->count - 2)
 #define nd_func_get_param(n, _i) nd_get_child(n, _i + 2)
 
@@ -33,6 +40,11 @@ enum {
 
   _NDKIND_BEGIN_OF_LR_OP_EXPR_,
 
+  ND_INDEXREF,      // [ ]
+  ND_MEMBER_ACCESS, // .
+
+  ND_NOT, // !
+
   ND_MUL, // *
   ND_DIV, // /
   ND_MOD, // %
@@ -44,8 +56,12 @@ enum {
   ND_RSHIFT, // >>
 
   ND_EQUAL,        // ==
-  ND_BIGGER,       // <
-  ND_BIGGER_OR_EQ, // <=
+  ND_BIGGER,       // >
+  ND_BIGGER_OR_EQ, // >=
+
+  ND_BIT_AND, // &
+  ND_BIT_XOR, // ^
+  ND_BIT_OR,  // |
 
   _NDKIND_END_OF_LR_OP_EXPR_,
 

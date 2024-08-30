@@ -18,6 +18,18 @@ parser_ctx parser_new(source_file* src, mt_token* list) {
   return ctx;
 }
 
+static mt_node* new_int_node(i64 val) {
+  mt_node* nd = node_new(ND_VALUE);
+
+  nd->value = mt_obj_new_int(val);
+
+  return nd;
+}
+
+static mt_node* new_zero() {
+  return new_int_node(0);
+}
+
 static parser_ctx ctx;
 
 static mt_token* getcur() {
@@ -136,17 +148,47 @@ static mt_node* p_factor() {
   return node;
 }
 
-static mt_node* p_mul() {
-  mt_node* x = p_factor();
-  mt_token* tok;
+// ------------------------------
+//  p_unary
+//
+//  operator:
+//    1:  !
+//    2:  -
+//    2:  +
+// ------------------------------
+static mt_node* p_unary() {
+  mt_token* tok = getcur();
+
+  if (eat("!"))
+    return node_new_with_lr(ND_NOT, tok, p_factor(), NULL);
+
+  if (eat("-"))
+    return node_new_with_lr(ND_SUB, tok, new_zero(), p_factor());
+
+  eat("+"); // optional
+
+  return p_factor();
+}
+
+// ------------------------------
+//  p_indexref
+//
+//  operator:
+//    1:  [ ]     index reference
+//    2:  .       member access
+// ------------------------------
+static mt_node* p_indexref() {
+  mt_node* x = p_unary();
 
   while (check()) {
-    tok = getcur();
+    mt_token* tok = getcur();
 
-    if (eat("*"))
-      x = node_new_with_lr(ND_MUL, tok, x, p_factor());
-    else if (eat("/"))
-      x = node_new_with_lr(ND_DIV, tok, x, p_factor());
+    if (eat("."))
+      x = node_new_with_lr(ND_MEMBER_ACCESS, tok, x, p_unary());
+    else if (eat("[")) {
+      x = node_new_with_lr(ND_INDEXREF, tok, x, p_unary());
+      expect("]");
+    }
     else
       break;
   }
@@ -154,6 +196,40 @@ static mt_node* p_mul() {
   return x;
 }
 
+// ------------------------------
+//  p_mul
+//
+//  operator:
+//    1.  *
+//    2.  /
+//    3.  %
+// ------------------------------
+static mt_node* p_mul() {
+  mt_node* x = p_indexref();
+
+  while (check()) {
+    mt_token* tok = getcur();
+
+    if (eat("*"))
+      x = node_new_with_lr(ND_MUL, tok, x, p_indexref());
+    else if (eat("/"))
+      x = node_new_with_lr(ND_DIV, tok, x, p_indexref());
+    else if (eat("%"))
+      x = node_new_with_lr(ND_MOD, tok, x, p_indexref());
+    else
+      break;
+  }
+
+  return x;
+}
+
+// ------------------------------
+//  p_add
+//
+//  operator:
+//    1.  +
+//    2.  -
+// ------------------------------
 static mt_node* p_add() {
   mt_node* x = p_mul();
   mt_token* tok;
@@ -172,8 +248,85 @@ static mt_node* p_add() {
   return x;
 }
 
+// ------------------------------
+//  p_shift
+//
+//  operator:
+//    1.  <<
+//    2.  >>
+// ------------------------------
+static mt_node* p_shift() {
+  mt_node* x = p_add();
+
+  while (check()) {
+    mt_token* tok = getcur();
+
+    if (eat("<<"))
+      x = node_new_with_lr(ND_LSHIFT, tok, x, p_add());
+    else if (eat(">>"))
+      x = node_new_with_lr(ND_RSHIFT, tok, x, p_add());
+    else
+      break;
+  }
+
+  return x;
+}
+
+// ------------------------------
+//  p_compare
+//
+//  operator:
+//    1.  ==
+//    2.  !=
+//    3.  >
+//    4.  <
+//    5.  >=
+//    6.  <=
+// ------------------------------
+static mt_node* p_compare() {
+  mt_node* x = p_shift();
+
+  while (check()) {
+    mt_token* tok = getcur();
+
+    // a == b
+    if (eat("=="))
+      x = node_new_with_lr(ND_EQUAL, tok, x, p_shift());
+
+    // a != b
+    else if (eat("!="))
+      // --> !(a == b)
+      x = node_new_with_lr(
+          ND_NOT, tok, node_new_with_lr(ND_EQUAL, tok, x, p_shift()),
+          NULL);
+
+    // a > b
+    else if (eat(">"))
+      x = node_new_with_lr(ND_BIGGER, tok, x, p_shift());
+
+    // a < b
+    else if (eat("<"))
+      // --> b > a
+      x = node_new_with_lr(ND_BIGGER, tok, p_shift(), x);
+
+    // a >= b
+    else if (eat(">="))
+      x = node_new_with_lr(ND_BIGGER_OR_EQ, tok, x, p_shift());
+
+    // a <= b
+    else if (eat("<="))
+      // --> b >= a
+      x = node_new_with_lr(ND_BIGGER_OR_EQ, tok, p_shift(), x);
+
+    else
+      break;
+  }
+
+  return x;
+}
+
 static mt_node* p_expr() {
-  return p_add();
+  return p_compare();
 }
 
 static mt_node* p_stmt() {
@@ -207,7 +360,7 @@ static mt_node* p_stmt() {
   //    let a : type = value;
   //
   //  layout:
-  //    name, len     --->  a
+  //    name, len     --->  (name)
   //    child[0]      --->  type
   //    child[1]      --->  value   or null
   //

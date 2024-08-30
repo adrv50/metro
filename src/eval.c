@@ -9,10 +9,62 @@
 #include "vector.h"
 #include "utf-convert.h"
 
-// static bool check_valid_operator(mt_node_kind kind, mt_type_info_t
-// left,
-//                                  mt_type_info_t right) {
-// }
+typedef struct {
+  mt_node* decl; // ptr to node of let-statement => ND_VARDEF
+  char const* name;
+  mt_object* value;
+} lvar_data_t;
+
+typedef struct {
+  mt_node* block;  // ND_BLOCK
+  vector* varlist; // vector<lvar_data_t>
+} variable_list_t;
+
+typedef struct {
+  vector* varlist_stack; // vector<variable_list_t>
+} eval_context_t;
+
+static eval_context_t g_context;
+
+static mt_object* evaluate(mt_node* node);
+
+static variable_list_t* mv_ev_ctx_get_current_varlist() {
+  return (variable_list_t*)vector_last(g_context.varlist_stack);
+}
+
+//
+// create a new lvar_data_t from node (ND_VARDEF)
+static lvar_data_t* mt_ev_vardef_wrap(mt_node* nd) {
+  debug(assert(nd->kind == ND_VARDEF));
+
+  lvar_data_t* vd = calloc(1, sizeof(lvar_data_t*));
+
+  vd->decl = nd;
+  vd->name = nd->name;
+
+  if (nd_let_init(nd)) {
+    vd->value = evaluate(nd_let_init(nd));
+  }
+
+  return vd;
+}
+
+static void mt_ev_enter_block(mt_node* block) {
+  variable_list_t* p_vl = vector_append(
+      g_context.varlist_stack, calloc(1, sizeof(variable_list_t)));
+
+  p_vl->block = block;
+  p_vl->varlist = vector_new(sizeof(lvar_data_t*));
+}
+
+static void mt_ev_leave_block(mt_node* block) {
+  variable_list_t* cur_VL = mv_ev_ctx_get_current_varlist();
+
+  assert(cur_VL->block == block);
+
+  vector_free(cur_VL->varlist);
+  vector_pop_back(g_context.varlist_stack);
+}
 
 static inline int is_either_type(mt_type_kind K, mt_object* a,
                                  mt_object* b) {
@@ -224,16 +276,16 @@ static mt_object* evaluate(mt_node* node) {
     [ND_VALUE]      = &&case_value,
     [ND_VARIABLE]   = &&case_variable,
     [ND_CALLFUNC]   = &&case_callfunc,
-    
+
     [ND_ASSIGN]     = &&case_assign,
-    
+
     [ND_VARDEF]     = &&case_vardef,
     [ND_BLOCK]      = &&case_block,
 
     [ND_FUNCTION]   = &&case_skip,
     [ND_ENUM]       = &&case_skip,
     [ND_STRUCT]     = &&case_skip,
-    
+
     [ND_PROGRAM]    = &&case_program,
   };
 
