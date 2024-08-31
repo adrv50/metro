@@ -122,11 +122,11 @@ static mt_node* p_factor() {
   case TOK_IDENTIFIER: {
     node = node_new_with_token(ND_VARIABLE, tok);
 
+    node->name = node->tok->str;
+    node->len = node->tok->len;
+
     if (eat("(")) {
       node->kind = ND_CALLFUNC;
-
-      node->name = node->tok->str;
-      node->len = node->tok->len;
 
       if (!eat(")")) {
         do {
@@ -498,7 +498,7 @@ static mt_node* p_top() {
 mt_node* parser_parse(source_file* src, mt_token* toklist) {
   ctx = parser_new(src, toklist);
 
-  mt_node* nd = node_new(ND_PROGRAM);
+  mt_node* nd = node_new(ND_BLOCK);
 
   while (check()) {
     node_append(nd, p_top());

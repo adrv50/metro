@@ -8,57 +8,114 @@
 #include "eval.h"
 #include "vector.h"
 #include "utf-convert.h"
+#include "metro.h"
 
+//
+//  struct lvar_data_t:
+//
+//  for keep variable in variable_list_t
+//
 typedef struct {
   mt_node* decl; // ptr to node of let-statement => ND_VARDEF
   char const* name;
   mt_object* value;
 } lvar_data_t;
 
+//
+//  struct variable_list_t:
+//
 typedef struct {
-  mt_node* block;  // ND_BLOCK
+  mt_node* block;  // ND_BLOCK (owner of this list)
   vector* varlist; // vector<lvar_data_t>
 } variable_list_t;
 
+//
+//  struct eval_context_t
+//
 typedef struct {
   vector* varlist_stack; // vector<variable_list_t>
 } eval_context_t;
 
-static eval_context_t g_context;
+static eval_context_t g_context; // context
 
 static mt_object* evaluate(mt_node* node);
 
-static variable_list_t* mv_ev_ctx_get_current_varlist() {
+static variable_list_t* mt_ev_ctx_get_current_varlist() {
   return (variable_list_t*)vector_last(g_context.varlist_stack);
 }
 
-//
-// create a new lvar_data_t from node (ND_VARDEF)
-static lvar_data_t* mt_ev_vardef_wrap(mt_node* nd) {
-  debug(assert(nd->kind == ND_VARDEF));
+static lvar_data_t* mt_ev_find_variable(char const* name,
+                                        size_t len) {
+  for (i64 i = g_context.varlist_stack->count - 1; i >= 0; i--) {
+    variable_list_t* vl = vector_get(g_context.varlist_stack, i);
 
-  lvar_data_t* vd = calloc(1, sizeof(lvar_data_t*));
+    for (size_t j = 0; j < vl->varlist->count; j++) {
+      lvar_data_t* vd = vector_get(vl->varlist, j);
 
-  vd->decl = nd;
-  vd->name = nd->name;
-
-  if (nd_let_init(nd)) {
-    vd->value = evaluate(nd_let_init(nd));
+      if (strncmp(vd->name, name, len) == 0)
+        return vd;
+    }
   }
 
-  return vd;
+  return NULL;
 }
 
+//
+//  mt_ev_makever:
+//    create variable in current var-list
+//
+static lvar_data_t* mt_ev_makevar(mt_node* nd) {
+  debug(assert(nd->kind == ND_VARDEF));
+
+  variable_list_t* cur_vl = mt_ev_ctx_get_current_varlist();
+  lvar_data_t* var = NULL;
+
+  alertfmt("%.*s", (int)nd->len, nd->name);
+
+  for (size_t i = 0; i < cur_vl->varlist->count; i++) {
+    alert;
+
+    if (strncmp(vector_get_as(lvar_data_t, cur_vl->varlist, i).name,
+                nd->name, nd->len) == 0) {
+      alert;
+      var = vector_get(cur_vl->varlist, i);
+      break;
+    }
+  }
+
+  if (!var) {
+    alertfmt("%.*s", (int)nd->len, nd->name);
+
+    var = vector_append(cur_vl->varlist,
+                        calloc(1, sizeof(lvar_data_t)));
+
+    var->decl = nd;
+    var->name = nd->name;
+  }
+
+  if (nd_let_init(nd)) {
+    var->value = evaluate(nd_let_init(nd));
+  }
+
+  return var;
+}
+
+//
+// enter in block
+//
 static void mt_ev_enter_block(mt_node* block) {
   variable_list_t* p_vl = vector_append(
       g_context.varlist_stack, calloc(1, sizeof(variable_list_t)));
 
   p_vl->block = block;
-  p_vl->varlist = vector_new(sizeof(lvar_data_t*));
+  p_vl->varlist = vector_new(sizeof(lvar_data_t));
 }
 
+//
+// leave from block
+//
 static void mt_ev_leave_block(mt_node* block) {
-  variable_list_t* cur_VL = mv_ev_ctx_get_current_varlist();
+  variable_list_t* cur_VL = mt_ev_ctx_get_current_varlist();
 
   assert(cur_VL->block == block);
 
@@ -265,7 +322,7 @@ static mt_object* sub_object(mt_object* left, mt_object* right) {
 
 //
 // ============================================
-//  Evaluate a nodes
+//  Evaluator
 // ============================================
 //
 static mt_object* evaluate(mt_node* node) {
@@ -285,8 +342,6 @@ static mt_object* evaluate(mt_node* node) {
     [ND_FUNCTION]   = &&case_skip,
     [ND_ENUM]       = &&case_skip,
     [ND_STRUCT]     = &&case_skip,
-
-    [ND_PROGRAM]    = &&case_program,
   };
 
   static expr_fp_t op_expr_labels[] = {
@@ -297,6 +352,8 @@ static mt_object* evaluate(mt_node* node) {
     [ND_SUB] = sub_object,
   };
   // clang-format on
+
+  static mt_object* result;
 
   if (node->kind >= _NDKIND_BEGIN_OF_LR_OP_EXPR_ &&
       node->kind <= _NDKIND_END_OF_LR_OP_EXPR_)
@@ -309,8 +366,16 @@ static mt_object* evaluate(mt_node* node) {
 case_value:
   return node->value;
 
-case_variable:
-  todo_impl;
+case_variable : {
+  lvar_data_t* var = mt_ev_find_variable(node->name, node->len);
+
+  if (!var) {
+    mt_abort_with(mt_new_error_from_token(
+        ERR_UNDEFINED_VARIABLE, "undefined variable", node->tok));
+  }
+
+  return var->value;
+}
 
 //
 // ND_CALLFUNC
@@ -339,16 +404,17 @@ case_assign:
   todo_impl;
 
 case_block:
-case_program : {
-  mt_object* res;
+  mt_ev_enter_block(node);
 
   for (size_t i = 0; i < node->child->count; i++)
-    res = evaluate(nd_get_child(node, i));
+    result = evaluate(nd_get_child(node, i));
 
-  return res;
-}
+  mt_ev_leave_block(node);
+
+  return result;
 
 case_vardef:
+  mt_ev_makevar(node);
   return NULL;
 
 case_skip:
@@ -362,9 +428,11 @@ case_lr_operator_expr:
 }
 
 void mt_eval_init(void) {
+  g_context.varlist_stack = vector_new(sizeof(variable_list_t));
 }
 
 void mt_eval_exit(void) {
+  vector_free(g_context.varlist_stack);
 }
 
 mt_object* mt_eval_evalfull(mt_node* node) {

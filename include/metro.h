@@ -14,6 +14,8 @@ typedef enum {
 
   ERR_TYPE_MISMATCH,
 
+  ERR_UNDEFINED_VARIABLE,
+
   // parser: unexpected token
   ERR_UNEXPECTED_TOKEN,
 
