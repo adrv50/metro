@@ -7,6 +7,7 @@ typedef struct {
   mt_token* list;
   mt_token* endtok;
   mt_token* cur;
+  mt_token* ate;
 
 } parser_ctx;
 

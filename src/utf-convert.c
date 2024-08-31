@@ -194,7 +194,7 @@ size_t utf16_to_utf8(u8* out, const u16* in, size_t len) {
   size_t rc = 0;
   size_t units;
   u32 code;
-  u8 encoded[4];
+  u8 encoded[4] = {0};
 
   do {
     units = decode_utf16(&code, in);

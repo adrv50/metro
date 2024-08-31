@@ -40,7 +40,6 @@ mt_type_info type_eval(mt_node* node) {
 
     mt_type_info lhs = type_eval(nd_lhs(node));
     mt_type_info rhs = type_eval(nd_rhs(node));
-    mt_token* tok = node->tok;
 
     mt_type_kind lk = lhs.kind, rk = rhs.kind;
 

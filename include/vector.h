@@ -29,6 +29,8 @@ vector* vector_copy(vector* v);
 // destructor
 void vector_free(vector* v);
 
+void vector_resize(vector* v, size_t n);
+
 // add item
 void* vector_append(vector* v, void* item);
 void* vector_append_vector(vector* v, vector* vec);
@@ -36,6 +38,8 @@ void* vector_append_vector(vector* v, vector* vec);
 // insert
 void* vector_insert(vector* v, size_t index, void* item);
 void* vector_insert_vector(vector* v, size_t index, vector* vec);
+
+void vector_clear(vector* v);
 
 void vector_pop_back(vector* v);
 

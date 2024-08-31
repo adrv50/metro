@@ -70,22 +70,15 @@ static lvar_data_t* mt_ev_makevar(mt_node* nd) {
   variable_list_t* cur_vl = mt_ev_ctx_get_current_varlist();
   lvar_data_t* var = NULL;
 
-  alertfmt("%.*s", (int)nd->len, nd->name);
-
   for (size_t i = 0; i < cur_vl->varlist->count; i++) {
-    alert;
-
     if (strncmp(vector_get_as(lvar_data_t, cur_vl->varlist, i).name,
                 nd->name, nd->len) == 0) {
-      alert;
       var = vector_get(cur_vl->varlist, i);
       break;
     }
   }
 
   if (!var) {
-    alertfmt("%.*s", (int)nd->len, nd->name);
-
     var = vector_append(cur_vl->varlist,
                         calloc(1, sizeof(lvar_data_t)));
 
@@ -359,7 +352,11 @@ static mt_object* evaluate(mt_node* node) {
       node->kind <= _NDKIND_END_OF_LR_OP_EXPR_)
     goto case_lr_operator_expr;
 
-  debug(assert(case_labels[node->kind] != 0));
+  if (!case_labels[node->kind]) {
+    alertfmt("evaluator of node kind %d is not implemented",
+             node->kind);
+    exit(1);
+  }
 
   goto* case_labels[node->kind];
 
@@ -421,7 +418,11 @@ case_skip:
   return NULL;
 
 case_lr_operator_expr:
-  debug(assert(op_expr_labels[node->kind] != 0));
+  if (!op_expr_labels[node->kind]) {
+    alertfmt("evaluator of node kind %d is not implemented",
+             node->kind);
+    exit(1);
+  }
 
   return op_expr_labels[node->kind](evaluate(nd_lhs(node)),
                                     evaluate(nd_rhs(node)));
