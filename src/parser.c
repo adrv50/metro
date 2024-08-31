@@ -553,7 +553,63 @@ static mt_node* p_stmt() {
   }
 
   //
-  // expr
+  //  switch
+  //
+  else if (eat("switch")) {
+    todo_impl;
+  }
+
+  //
+  //  return
+  //
+  else if (eat("return")) {
+    todo_impl;
+  }
+
+  //
+  //  break
+  //
+  else if (eat("break")) {
+    todo_impl;
+  }
+
+  //
+  //  continue
+  //
+  else if (eat("continue")) {
+    todo_impl;
+  }
+
+  //
+  //  loop
+  //
+  else if (eat("loop")) {
+    todo_impl;
+  }
+
+  //
+  //  for
+  //
+  else if (eat("for")) {
+    todo_impl;
+  }
+
+  //
+  //  while
+  //
+  else if (eat("while")) {
+    todo_impl;
+  }
+
+  //
+  //  do-while
+  //
+  else if (eat("do")) {
+    todo_impl;
+  }
+
+  //
+  //  expr
   //
   else {
     node = p_expr();

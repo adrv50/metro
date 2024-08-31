@@ -88,16 +88,18 @@ enum {
   // block  := "{" stmt* "}"
   ND_BLOCK,
 
-  // if     :=  "if" <expr> <block> ("else" (<if> | <block>))?
   ND_IF,
+  ND_SWITCH,
 
-  // for    :=  "for" <ident> "in" <iterable> <block>
+  ND_RETURN,
+  ND_BREAK,
+  ND_CONTINUE,
+
+  ND_LOOP,
   ND_FOR,
-
-  // while  :=  "while" <cond: expr> <block>
   ND_WHILE,
+  ND_DO_WHILE,
 
-  // child = { type }
   ND_PARAM, // <name: ident> ":" <type>
 
   // child = { ret_type, params... }
