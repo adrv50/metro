@@ -6,30 +6,14 @@
 #include "check.h"
 #include "metro.h"
 
-/*
+static inline bool is_contain(mt_type_kind kind, mt_type_kind a,
+                              mt_type_kind b) {
+  return a == kind || b == kind;
+}
 
-#define MAKE_PTTR(OP, L, R, RS)                                      \
-  { ND_##OP, {TYPE_##L}, {TYPE_##R}, {TYPE_##RS}, }
-
-typedef struct {
-  mt_node_kind op;
-  mt_type_info left;
-  mt_type_info right;
-  mt_type_info result;
-} expr_type_pattern;
-
-// clang-format off
-
-// 足し算、掛け算の場合は左右逆でも一致
-
-static expr_type_pattern expr_pattern_list[] = {
-  // str * int = str
-  MAKE_PTTR(ADD, STRING, INT, STRING),
-};
-
-// clang-format on
-
-*/
+static inline bool is_numeric(mt_type_kind k) {
+  return k == TYPE_INT || k == TYPE_FLOAT;
+}
 
 mt_type_info type_eval(mt_node* node) {
   if (!node)
@@ -43,35 +27,33 @@ mt_type_info type_eval(mt_node* node) {
 
     mt_type_kind lk = lhs.kind, rk = rhs.kind;
 
-    bool is_same = lhs.kind == rhs.kind;
+    bool is_same_kind = lhs.kind == rhs.kind;
+
+    if (is_contain(TYPE_NONE, lk, rk))
+      goto err;
 
     switch (node->kind) {
+    // add
+    case ND_ADD:
+      if (is_contain(TYPE_BOOL, lk, rk) ||
+          is_contain(TYPE_CHAR, lk, rk) ||
+          (is_numeric(lk) != is_numeric(rk)))
+        goto err;
 
-      //
-      // mul
-      //
+    // mul
     case ND_MUL:
-      if (is_same) {
-        switch (lhs.kind) {
-        case TYPE_INT:
-        case TYPE_FLOAT:
-          return lhs;
-        }
+      if (is_numeric(lk) && is_numeric(rk)) {
+        if (is_contain(TYPE_FLOAT, lk, rk))
+          lhs.kind = TYPE_FLOAT;
+
+        break;
       }
-
-      // float * int
-      if ((lk == TYPE_FLOAT && rk == TYPE_INT) ||
-          (lk == TYPE_INT && rk == TYPE_FLOAT))
-        return (mt_type_info){TYPE_FLOAT};
-
-      // string * int
-      if ((lk == TYPE_INT && rk == TYPE_STRING) ||
-          (lk == TYPE_STRING && rk == TYPE_INT))
-        return (mt_type_info){TYPE_STRING};
-
       break;
     }
 
+    return lhs;
+
+  err:
     mt_abort_with(mt_new_error_from_token(
         ERR_TYPE_MISMATCH, "type mismatch", node->tok));
   }
@@ -87,5 +69,8 @@ mt_type_info type_eval(mt_node* node) {
   return mt_type_info_new(TYPE_NONE);
 }
 
+// ===============================
+//    Checker
+// ===============================
 void check(mt_node* node) {
 }

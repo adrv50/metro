@@ -26,6 +26,9 @@
 #define nd_if_true(n)     _N1(n)
 #define nd_if_false(n)    _N2(n)
 
+#define nd_switch_cond(n) _N0(n)
+#define nd_switch_(n) _N0(n)
+
 #define nd_func_name(n)           _N0(n)
 #define nd_func_params(n)         _N1(n)
 #define nd_func_rettype(n)        _N2(n)

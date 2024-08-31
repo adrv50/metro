@@ -556,28 +556,38 @@ static mt_node* p_stmt() {
   //  switch
   //
   else if (eat("switch")) {
+    node = node_new_with_lr(ND_SWITCH, token, p_expr(), NULL);
+
+    expect("{");
+
     todo_impl;
+    // ( "case" <expr> ":" <block> )*
+
+    expect("}");
   }
 
   //
   //  return
   //
   else if (eat("return")) {
-    todo_impl;
+    node = node_new_with_lr(ND_RETURN, token, p_expr(), NULL);
+    expect(";");
   }
 
   //
   //  break
   //
   else if (eat("break")) {
-    todo_impl;
+    node = node_new_with_token(ND_BREAK, token);
+    expect(";");
   }
 
   //
   //  continue
   //
   else if (eat("continue")) {
-    todo_impl;
+    node = node_new_with_token(ND_CONTINUE, token);
+    expect(";");
   }
 
   //

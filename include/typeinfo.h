@@ -3,7 +3,7 @@
 #include "types.h"
 #include "vector.h"
 
-typedef uint8_t mt_type_kind;
+typedef u8 mt_type_kind;
 
 enum {
   TYPE_NONE,

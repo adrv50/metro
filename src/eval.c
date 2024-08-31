@@ -337,7 +337,7 @@ static mt_object* evaluate(mt_node* node) {
     [ND_STRUCT]     = &&case_skip,
   };
 
-  static expr_fp_t op_expr_labels[] = {
+  static expr_fp_t expr_eval_funcs[] = {
     [ND_MUL] = mul_object,
     [ND_DIV] = div_object,
     [ND_MOD] = mod_object,
@@ -418,14 +418,14 @@ case_skip:
   return NULL;
 
 case_lr_operator_expr:
-  if (!op_expr_labels[node->kind]) {
+  if (!expr_eval_funcs[node->kind]) {
     alertfmt("evaluator of node kind %d is not implemented",
              node->kind);
     exit(1);
   }
 
-  return op_expr_labels[node->kind](evaluate(nd_lhs(node)),
-                                    evaluate(nd_rhs(node)));
+  return expr_eval_funcs[node->kind](evaluate(nd_lhs(node)),
+                                     evaluate(nd_rhs(node)));
 }
 
 void mt_eval_init(void) {
