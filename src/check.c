@@ -6,6 +6,8 @@
 #include "check.h"
 #include "metro.h"
 
+#include "mterr.h"
+
 static inline bool is_contain(mt_type_kind kind, mt_type_kind a,
                               mt_type_kind b) {
   return a == kind || b == kind;
@@ -15,15 +17,15 @@ static inline bool is_numeric(mt_type_kind k) {
   return k == TYPE_INT || k == TYPE_FLOAT;
 }
 
-mt_type_info type_eval(mt_node* node) {
+mt_type_info mt_ck_type_eval(mt_node* node) {
   if (!node)
     return mt_type_info_new(TYPE_NONE);
 
   if (node->kind > _NDKIND_BEGIN_OF_LR_OP_EXPR_ &&
       node->kind < _NDKIND_END_OF_LR_OP_EXPR_) {
 
-    mt_type_info lhs = type_eval(nd_lhs(node));
-    mt_type_info rhs = type_eval(nd_rhs(node));
+    mt_type_info lhs = mt_ck_type_eval(nd_lhs(node));
+    mt_type_info rhs = mt_ck_type_eval(nd_rhs(node));
 
     mt_type_kind lk = lhs.kind, rk = rhs.kind;
 
@@ -72,5 +74,19 @@ mt_type_info type_eval(mt_node* node) {
 // ===============================
 //    Checker
 // ===============================
-void check(mt_node* node) {
+void mt_ck_check(mt_node* node) {
+
+  switch (node->kind) {
+
+  case ND_VALUE:
+    if (!node->value) {
+      alertmsg(kind is ND_VALUE but `node->value` is NULL);
+      panic;
+    }
+
+    break;
+
+  case ND_VARIABLE:
+    break;
+  }
 }

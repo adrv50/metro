@@ -5,9 +5,9 @@
 //
 // evaluate type of expr
 //
-mt_type_info type_eval(mt_node* node);
+mt_type_info mt_ck_type_eval(mt_node* node);
 
 //
 // check node
 //
-void check(mt_node* node);
+void mt_ck_check(mt_node* node);

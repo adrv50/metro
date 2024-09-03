@@ -19,8 +19,7 @@
         "compile.h": "c",
         "errno.h": "c",
         "token.h": "c",
-        "source.h": "c",
-        "assert.h": "c"
+        "source.h": "c"
     },
 
     "editor.formatOnSave": true,

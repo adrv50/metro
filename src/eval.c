@@ -5,10 +5,12 @@
 
 #include "utils.h"
 #include "alert.h"
-#include "eval.h"
 #include "vector.h"
 #include "utf-convert.h"
+
+#include "mterr.h"
 #include "metro.h"
+#include "eval.h"
 
 //
 //  struct lvar_data_t:
@@ -348,6 +350,20 @@ static mt_object* evaluate(mt_node* node) {
 
   static mt_object* result;
 
+  switch (node->kind) {
+  case ND_CALLFUNC: {
+    mt_object* callee = evaluate(nd_get_child(node, 0));
+
+    if (!callee || callee->typeinfo.kind != TYPE_FUNCTION) {
+      mt_abort_with(mt_new_error_from_token(
+          ERR_TYPE_MISMATCH, "tried to call not callable object",
+          node->tok));
+    }
+
+    break;
+  }
+  }
+
   if (node->kind >= _NDKIND_BEGIN_OF_LR_OP_EXPR_ &&
       node->kind <= _NDKIND_END_OF_LR_OP_EXPR_)
     goto case_lr_operator_expr;
@@ -357,7 +373,6 @@ static mt_object* evaluate(mt_node* node) {
              node->kind);
     exit(1);
   }
-
   goto* case_labels[node->kind];
 
 case_value:

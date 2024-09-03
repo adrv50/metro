@@ -28,6 +28,8 @@ typedef struct {
     bool vb;
     u16 vc;
 
+    mt_node* vfn;
+
     // when TYPE_STRING
     vector* vs; // => vector<u16>
 

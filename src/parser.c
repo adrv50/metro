@@ -2,6 +2,8 @@
 #include <string.h>
 
 #include "metro.h"
+#include "mterr.h"
+
 #include "parser.h"
 
 parser_ctx parser_new(source_file* src, mt_token* list) {

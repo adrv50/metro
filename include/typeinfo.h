@@ -13,6 +13,8 @@ enum {
   TYPE_CHAR,
   TYPE_STRING,
   TYPE_VECTOR,
+  TYPE_FUNCTION,
+  TYPE_MODULE,
 };
 
 typedef struct {

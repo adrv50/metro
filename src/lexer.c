@@ -5,11 +5,12 @@
 #include <string.h>
 
 #include "alert.h"
-#include "lexer.h"
-#include "metro.h"
 #include "utf-convert.h"
 
 #include "object.h"
+#include "lexer.h"
+#include "metro.h"
+#include "mterr.h"
 
 static char* punctuaters[] = {
     "<<=", ">>=", "<<", ">>", "<=", ">=", "==", "!=", "..",
