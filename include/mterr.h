@@ -37,6 +37,9 @@ typedef struct mt_error_tag {
 
 } mt_error;
 
+void mt_err_init();
+void mt_err_exit();
+
 mt_error* mt_add_error(mt_err_kind_t kind, char const* msg,
                        size_t pos);
 
@@ -50,3 +53,5 @@ void mt_error_emit(mt_error* err);
 
 // emit all error and exit.
 void mt_error_emit_and_exit() __attribute__((__noreturn__));
+
+void mt_error_check();

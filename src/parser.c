@@ -65,8 +65,8 @@ static bool eat(char const* str) {
 
 static void expect_keep(char const* str) {
   if (!match(str)) {
-    mt_abort_with(mt_new_error_from_token(
-        ERR_UNEXPECTED_TOKEN, "unexpected token", getcur()));
+    mt_add_error_from_token(ERR_UNEXPECTED_TOKEN, "unexpected token",
+                            getcur());
   }
 }
 
@@ -85,8 +85,8 @@ static mt_token* expect_identifier() {
   mt_token* tok = getcur();
 
   if (tok->kind != TOK_IDENTIFIER) {
-    mt_abort_with(mt_new_error_from_token(
-        ERR_UNEXPECTED_TOKEN, "expected identifier", tok));
+    mt_add_error_from_token(ERR_UNEXPECTED_TOKEN,
+                            "expected identifier", tok);
   }
 
   next();
@@ -98,8 +98,8 @@ static mt_node* expect_identifier_nd() {
   mt_node* nd = p_scope_resol();
 
   if (nd->kind != ND_IDENTIFIER && nd->kind != ND_SCOPE_RESOLUTION) {
-    mt_abort_with(mt_new_error_from_token(
-        ERR_UNEXPECTED_TOKEN, "expected identifier", nd->tok));
+    mt_add_error_from_token(ERR_UNEXPECTED_TOKEN,
+                            "expected identifier", nd->tok);
   }
 
   return nd;
@@ -182,8 +182,11 @@ static mt_node* p_factor() {
   }
   }
 
-  mt_abort_with(mt_new_error_from_token(ERR_INVALID_SYNTAX,
-                                        "invalid syntax", tok));
+  alert;
+  mt_add_error_from_token(ERR_INVALID_SYNTAX, "invalid syntax", tok);
+
+  alert;
+  mt_error_check();
 }
 
 // ------------------------------
@@ -496,8 +499,8 @@ static mt_node* p_stmt() {
     }
 
     if (!closed)
-      mt_abort_with(mt_new_error_from_token(ERR_NOT_CLOSED_BRACKETS,
-                                            "not closed", token));
+      mt_add_error_from_token(ERR_NOT_CLOSED_BRACKETS, "not closed",
+                              token);
   }
 
   //

@@ -3,12 +3,14 @@
 #include "eval.h"
 #include "check.h"
 #include "metro.h"
+#include "mterr.h"
 
-static source_file* cur_source;
-static mt_driver* _g_instance;
+static vector* _instances;
 
 mt_driver* mt_driver_new(char* path) {
   mt_driver* dr = calloc(1, sizeof(mt_driver));
+
+  vector_append(_instances, &dr);
 
   dr->source = source_file_new(path);
 
@@ -18,11 +20,13 @@ mt_driver* mt_driver_new(char* path) {
 void mt_driver_free(mt_driver* dr) {
   // todo: free lexer
 
+  vector_pop_back(_instances);
+
   free(dr);
 }
 
 mt_driver* mt_driver_get_cur_instance() {
-  return _g_instance;
+  return *(mt_driver**)(vector_last(_instances));
 }
 
 // debug
@@ -79,40 +83,24 @@ int mt_driver_main(mt_driver* dr, int argc, char** argv) {
   (void)argc;
   (void)argv;
 
-  metro_init();
-
   dr->lexer = lexer_new(dr->source);
 
   mt_token* tok = lexer_lex(dr->lexer);
-
-  // mt_abort_with(mt_new_error_from_token(ERR_INVALID_TOKEN, "test
-  // error", tok));
-
-  // print_token(tok);
+  mt_error_check();
 
   mt_node* nd = parser_parse(dr->source, tok);
 
-  // print_node(nd);
-  // puts("\n");
+  mt_error_check();
 
-  //
   // check
   mt_ck_check(nd);
-
-  return 0;
+  mt_error_check();
 
   mt_eval_init();
 
   mt_eval_evalfull(nd);
 
   mt_eval_exit();
-
-  // printf("%ld\n", result->vi);
-
-  // print_object(result);
-  // puts("");
-
-  // compiler_compile_full(nd);
 
   node_free(nd);
   metro_exit();
@@ -121,5 +109,17 @@ int mt_driver_main(mt_driver* dr, int argc, char** argv) {
 }
 
 source_file* mt_driver_get_current_source(mt_driver* dr) {
-  return cur_source;
+  return dr->source;
+}
+
+void metro_init() {
+  mt_err_init();
+
+  _instances = vector_new(sizeof(mt_driver*));
+}
+
+void metro_exit() {
+  mt_err_exit();
+
+  vector_free(_instances);
 }

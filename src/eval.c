@@ -355,10 +355,12 @@ static mt_object* evaluate(mt_node* node) {
     mt_object* callee = evaluate(nd_get_child(node, 0));
 
     if (!callee || callee->typeinfo.kind != TYPE_FUNCTION) {
-      mt_abort_with(mt_new_error_from_token(
-          ERR_TYPE_MISMATCH, "tried to call not callable object",
-          node->tok));
+      mt_add_error_from_token(ERR_TYPE_MISMATCH,
+                              "tried to call not callable object",
+                              node->tok);
     }
+
+    todo_impl;
 
     break;
   }
@@ -382,8 +384,8 @@ case_variable : {
   lvar_data_t* var = mt_ev_find_variable(node->name, node->len);
 
   if (!var) {
-    mt_abort_with(mt_new_error_from_token(
-        ERR_UNDEFINED_VARIABLE, "undefined variable", node->tok));
+    mt_add_error_from_token(ERR_UNDEFINED_VARIABLE,
+                            "undefined variable", node->tok);
   }
 
   return var->value;

@@ -197,8 +197,7 @@ mt_token* lexer_lex(mtlexer* lx) {
         lx->position++;
 
       if (!closed) {
-        mt_abort_with(mt_new_error(ERR_INVALID_TOKEN,
-                                   "not closed literal", pos));
+        mt_add_error(ERR_INVALID_TOKEN, "not closed literal", pos);
       }
 
       cur = token_new(TOK_CHAR, cur, str, lx->position - pos, pos);
@@ -215,8 +214,7 @@ mt_token* lexer_lex(mtlexer* lx) {
         lx->position++;
 
       if (!closed) {
-        mt_abort_with(mt_new_error(ERR_INVALID_TOKEN,
-                                   "not closed literal", pos));
+        mt_add_error(ERR_INVALID_TOKEN, "not closed literal", pos);
       }
 
       cur = token_new(TOK_STRING, cur, str + 1,
@@ -253,8 +251,7 @@ mt_token* lexer_lex(mtlexer* lx) {
 
     // punctuater
     else if (!(cur = lx_eat_punctuater(lx, cur))) {
-      mt_abort_with(
-          mt_new_error(ERR_INVALID_TOKEN, "invalid token", pos));
+      mt_add_error(ERR_INVALID_TOKEN, "invalid token", pos);
     }
 
     lx_pass_space(lx);

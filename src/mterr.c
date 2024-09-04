@@ -2,20 +2,16 @@
 #include "metro.h"
 
 static mt_error _err_top;
-static mt_error* errptr;
+static mt_error* errptr = &_err_top;
+static size_t err_count = 0;
 
-void metro_init() {
-  errptr = &_err_top;
+void mt_err_init() {
 }
 
-void metro_exit() {
-  // mt_error のメモリは解放しない
-  // エラーが発生した時点でアプリケーションが終了することが予測できます
-
-  // 警告だけを出して続行するならば、厳しくエラーを出して終了したい
+void mt_err_exit() {
 }
 
-mt_error* mt_new_error(mt_err_kind_t kind, char const* msg,
+mt_error* mt_add_error(mt_err_kind_t kind, char const* msg,
                        size_t pos) {
   mt_error* err = calloc(1, sizeof(mt_error));
 
@@ -24,24 +20,28 @@ mt_error* mt_new_error(mt_err_kind_t kind, char const* msg,
 
   err->position = pos;
 
+  // err->_next = errptr->_next;
+
   errptr->_next = err;
-  errptr = errptr->_next;
+  errptr = err;
+
+  err_count++;
 
   return err;
 }
 
-mt_error* mt_new_error_from_token(mt_err_kind_t kind, char const* msg,
+mt_error* mt_add_error_from_token(mt_err_kind_t kind, char const* msg,
                                   mt_token* token) {
-  mt_error* err = mt_new_error(kind, msg, 0);
+  mt_error* err = mt_add_error(kind, msg, 0);
 
   err->token = token;
 
   return err;
 }
 
-mt_error* mt_new_error_from_node(mt_err_kind_t kind, char const* msg,
+mt_error* mt_add_error_from_node(mt_err_kind_t kind, char const* msg,
                                  mt_node* node) {
-  mt_error* err = mt_new_error(kind, msg, 0);
+  mt_error* err = mt_add_error(kind, msg, 0);
 
   err->node = node;
 
@@ -49,12 +49,11 @@ mt_error* mt_new_error_from_node(mt_err_kind_t kind, char const* msg,
 }
 
 void mt_error_emit(mt_error* err) {
-  size_t pos;
-  size_t len;
+  size_t pos = 0, len = 0;
 
   (void)len;
 
-  source_file* cur_source =
+  source_file* src =
       mt_driver_get_current_source(mt_driver_get_cur_instance());
 
   // node の実装がめんどいのでとりあえず token
@@ -70,10 +69,50 @@ void mt_error_emit(mt_error* err) {
     todo_impl;
   }
 
-  printf("error! '%s' pos = %zu\n", err->msg, pos);
+  // trim line
+  int linenum = 1;
+  int beginpos = 0;
+  int endpos = (int)src->length;
+
+  char const* line = NULL;
+  int line_len = 0;
+
+  for (int i = 0; i < pos; i++) {
+    if (src->data[i] == '\n') {
+      beginpos = i + 1;
+      linenum++;
+    }
+  }
+
+  for (int i = beginpos; i < endpos; i++) {
+    if (src->data[i] == '\n') {
+      endpos = i;
+    }
+  }
+
+  line = src->data + beginpos;
+  line_len = endpos - beginpos;
+
+  alert;
+  printf("%.*s\n", line_len, line);
 }
 
-void mt_abort_with(mt_error* err) {
-  mt_error_emit(err);
+void mt_error_emit_and_exit() {
+
+  alert;
+
+  for (mt_error* ep = _err_top._next; ep; ep = ep->_next) {
+    alert;
+    mt_error_emit(ep);
+  }
+
   exit(1);
+}
+
+void mt_error_check() {
+  if (err_count == 0)
+    return;
+
+  alert;
+  mt_error_emit_and_exit();
 }

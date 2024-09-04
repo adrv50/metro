@@ -8,6 +8,8 @@
 
 #include "mterr.h"
 
+static mt_type_info check(mt_node* node);
+
 static inline bool is_contain(mt_type_kind kind, mt_type_kind a,
                               mt_type_kind b) {
   return a == kind || b == kind;
@@ -164,6 +166,7 @@ static mt_type_info check(mt_node* node) {
 
   case ND_VARDEF: {
     ck_define_variable(node);
+
     break;
   }
 
