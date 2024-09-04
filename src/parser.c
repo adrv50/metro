@@ -182,11 +182,8 @@ static mt_node* p_factor() {
   }
   }
 
-  alert;
   mt_add_error_from_token(ERR_INVALID_SYNTAX, "invalid syntax", tok);
-
-  alert;
-  mt_error_check();
+  mt_error_emit_and_exit();
 }
 
 // ------------------------------

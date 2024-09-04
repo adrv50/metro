@@ -90,19 +90,30 @@ void mt_error_emit(mt_error* err) {
     }
   }
 
+  int pos_on_line = pos - beginpos - 1;
+
   line = src->data + beginpos;
   line_len = endpos - beginpos;
 
-  alert;
-  printf("%.*s\n", line_len, line);
+  bool is_warn = false; /* feature, TODO */
+
+  printf(COL_BOLD COL_WHITE "%s:%d:%d: %s " COL_WHITE "%s\n",
+         src->path, linenum, pos_on_line,
+         is_warn ? (COL_MAGENTA "warning:") : (COL_RED "error:"),
+         err->msg);
+
+  printf("     |\n");
+  printf(" % 3d | %.*s\n", linenum, line_len, line);
+
+  printf("     | ");
+  for (int i = 1; i < pos_on_line; i++)
+    printf(" ");
+
+  printf("^\n     |\n");
 }
 
 void mt_error_emit_and_exit() {
-
-  alert;
-
   for (mt_error* ep = _err_top._next; ep; ep = ep->_next) {
-    alert;
     mt_error_emit(ep);
   }
 
@@ -113,6 +124,5 @@ void mt_error_check() {
   if (err_count == 0)
     return;
 
-  alert;
   mt_error_emit_and_exit();
 }
