@@ -14,6 +14,24 @@ mt_type_info mt_type_info_new(mt_type_kind kind) {
   return ti;
 }
 
+bool mt_type_is_equal(mt_type_info a, mt_type_info b) {
+  if (a.kind != b.kind)
+    return false;
+
+  if (a.is_const != b.is_const)
+    return false;
+
+  if (a.params->count >= 1 && b.params->count == a.params->count) {
+    for (int i = 0; i < a.params->count; i++) {
+      if (!mt_type_is_equal(vector_get_as(mt_type_info, a.params, i),
+                            vector_get_as(mt_type_info, b.params, i)))
+        return false;
+    }
+  }
+
+  return true;
+}
+
 mt_object* mt_obj_new(mt_type_info typeinfo) {
   mt_object* obj = calloc(1, sizeof(mt_object));
 

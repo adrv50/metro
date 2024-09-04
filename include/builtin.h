@@ -2,14 +2,18 @@
 
 #include "node.h"
 
+typedef mt_object* (*builtin_func_ptr_t)(int, mt_object**);
+
 typedef struct {
   char const* name;
   int namelen;
 
-  mt_node* impl; // => ND_FUNCTION
+  builtin_func_ptr_t impl;
 
   mt_type_info* arg_types;
-  u16 arg_count;
+  int arg_count; // -1 is free args
 
   mt_type_info return_type;
-} mt_builtin_func;
+} mt_builtin_func_t;
+
+mt_builtin_func_t const* mt_get_builtin_functions();

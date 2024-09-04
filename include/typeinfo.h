@@ -19,7 +19,10 @@ enum {
 
 typedef struct {
   mt_type_kind kind;
+  bool is_const;
   vector* params; // vector<mt_type_info_t>
 } mt_type_info;
 
 mt_type_info mt_type_info_new(mt_type_kind kind);
+
+bool mt_type_is_equal(mt_type_info a, mt_type_info b);

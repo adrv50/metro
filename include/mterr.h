@@ -34,18 +34,19 @@ typedef struct mt_error_tag {
   mt_node* node;
 
   struct mt_error_tag* _next;
+
 } mt_error;
 
-mt_error* mt_new_error(mt_err_kind_t kind, char const* msg,
+mt_error* mt_add_error(mt_err_kind_t kind, char const* msg,
                        size_t pos);
 
-mt_error* mt_new_error_from_token(mt_err_kind_t kind, char const* msg,
+mt_error* mt_add_error_from_token(mt_err_kind_t kind, char const* msg,
                                   mt_token* token);
 
-mt_error* mt_new_error_from_node(mt_err_kind_t kind, char const* msg,
+mt_error* mt_add_error_from_node(mt_err_kind_t kind, char const* msg,
                                  mt_node* node);
 
 void mt_error_emit(mt_error* err);
 
-// emit error and exit.
-void mt_abort_with(mt_error* err) __attribute__((__noreturn__));
+// emit all error and exit.
+void mt_error_emit_and_exit() __attribute__((__noreturn__));

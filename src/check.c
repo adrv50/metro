@@ -17,55 +17,166 @@ static inline bool is_numeric(mt_type_kind k) {
   return k == TYPE_INT || k == TYPE_FLOAT;
 }
 
-mt_type_info mt_ck_type_eval(mt_node* node) {
-  if (!node)
-    return mt_type_info_new(TYPE_NONE);
+struct block_context_t;
+typedef struct block_context_t block_context_t;
 
-  if (node->kind > _NDKIND_BEGIN_OF_LR_OP_EXPR_ &&
-      node->kind < _NDKIND_END_OF_LR_OP_EXPR_) {
+typedef struct {
+  mt_node* decl;
+  char const* name;
+  int namelen;
+  mt_type_info type;
+  bool is_type_deducted;
+} emu_lvar_t;
 
-    mt_type_info lhs = mt_ck_type_eval(nd_lhs(node));
-    mt_type_info rhs = mt_ck_type_eval(nd_rhs(node));
+typedef struct {
+  struct block_context_t* block;
+  vector* list; // vector<emu_lvar_t>
+} emu_varlist_t;
 
-    mt_type_kind lk = lhs.kind, rk = rhs.kind;
+static emu_varlist_t* new_emuvlist(struct block_context_t* blk,
+                                   vector* list) {
+  emu_varlist_t* vl = calloc(1, sizeof(emu_varlist_t));
 
-    bool is_same_kind = lhs.kind == rhs.kind;
+  vl->block = blk;
+  vl->list = list;
 
-    if (is_contain(TYPE_NONE, lk, rk))
-      goto err;
+  return vl;
+}
 
-    switch (node->kind) {
-    // add
-    case ND_ADD:
-      if (is_contain(TYPE_BOOL, lk, rk) ||
-          is_contain(TYPE_CHAR, lk, rk) ||
-          (is_numeric(lk) != is_numeric(rk)))
-        goto err;
+//
+//  fn: emu_varlist_append_variable
+//
+//  params:
+//    vlist         = inst of `emu_varlist_t` to append new lvar
+//    name, len     = name
+//    type          = type of variable
+//
+static emu_lvar_t*
+emu_varlist_append_variable(emu_varlist_t* vlist, char const* name,
+                            int len, mt_type_info type,
+                            bool is_type_deducted) {
+  emu_lvar_t lvar = {0};
 
-    // mul
-    case ND_MUL:
-      if (is_numeric(lk) && is_numeric(rk)) {
-        if (is_contain(TYPE_FLOAT, lk, rk))
-          lhs.kind = TYPE_FLOAT;
+  lvar.name = name;
+  lvar.namelen = len;
 
-        break;
-      }
+  lvar.type = type;
+  lvar.is_type_deducted = is_type_deducted;
+
+  return (emu_lvar_t*)vector_append(vlist->list, &lvar);
+}
+
+struct block_context_t {
+  mt_node* block;
+  emu_varlist_t* vlist;
+};
+
+static vector* blockctx_stack; // vector<block_context_t>
+
+static block_context_t* ck_enter_block(mt_node* blk) {
+  block_context_t temp = {0};
+  block_context_t* ctx = vector_append(blockctx_stack, &temp);
+
+  ctx->block = blk;
+  ctx->vlist = new_emuvlist(ctx, vector_new(sizeof(emu_lvar_t)));
+
+  return ctx;
+}
+
+static block_context_t* ck_get_cur_block_ctx() {
+  return vector_last(blockctx_stack);
+}
+
+static void ck_leave_block() {
+  block_context_t* blk = ck_get_cur_block_ctx();
+
+  vector_free(blk->vlist->list);
+
+  vector_pop_back(blockctx_stack);
+}
+
+static void ck_find_variable(mt_node* node) {
+  assert(node->kind == ND_IDENTIFIER || node->kind ||
+         ND_SCOPE_RESOLUTION);
+}
+
+static void ck_define_variable(mt_node* node) {
+  assert(node->kind == ND_VARDEF);
+
+  emu_varlist_t* cur_vlist = ck_get_cur_block_ctx()->vlist;
+  emu_lvar_t* pv = NULL;
+
+  for (int i = 0; i < cur_vlist->list->count; i++) {
+    emu_lvar_t* var = (emu_lvar_t*)vector_get(cur_vlist->list, i);
+
+    if (var->namelen == node->len &&
+        strncmp(var->name, node->name, node->len) == 0) {
+      pv = var;
       break;
     }
-
-    return lhs;
-
-  err:
-    mt_abort_with(mt_new_error_from_token(
-        ERR_TYPE_MISMATCH, "type mismatch", node->tok));
   }
+
+  if (!pv) {
+    pv =
+        emu_varlist_append_variable(cur_vlist, node->name, node->len,
+                                    (mt_type_info){TYPE_NONE}, false);
+  }
+
+  mt_node* ndtype = nd_let_type(node);
+  mt_node* ndinit = nd_let_init(node);
+
+  mt_type_info tptype, tpinit;
+
+  if (ndtype && ndinit) {
+    tptype = check(ndtype);
+    tpinit = check(ndinit);
+
+    if (!mt_type_is_equal(tptype, tpinit)) {
+    }
+  }
+}
+
+static mt_type_info check(mt_node* node) {
 
   switch (node->kind) {
   case ND_VALUE:
-    return node->value->typeinfo;
+    assert(node->value);
+    break;
 
-  default:
-    todo_impl;
+  case ND_IDENTIFIER: {
+    alert;
+
+    break;
+  }
+
+  case ND_SCOPE_RESOLUTION: {
+    alert;
+
+    break;
+  }
+
+  case ND_CALLFUNC: {
+
+    alert;
+
+    break;
+  }
+
+  case ND_VARDEF: {
+    ck_define_variable(node);
+    break;
+  }
+
+  case ND_BLOCK: {
+    ck_enter_block(node);
+
+    for (size_t i = 0; i < node->child->count; i++) {
+      check(nd_get_child(node, i));
+    }
+
+    ck_leave_block();
+    break;
+  }
   }
 
   return mt_type_info_new(TYPE_NONE);
@@ -76,17 +187,9 @@ mt_type_info mt_ck_type_eval(mt_node* node) {
 // ===============================
 void mt_ck_check(mt_node* node) {
 
-  switch (node->kind) {
+  blockctx_stack = vector_new(sizeof(block_context_t));
 
-  case ND_VALUE:
-    if (!node->value) {
-      alertmsg(kind is ND_VALUE but `node->value` is NULL);
-      panic;
-    }
+  check(node);
 
-    break;
-
-  case ND_VARIABLE:
-    break;
-  }
+  vector_free(blockctx_stack);
 }

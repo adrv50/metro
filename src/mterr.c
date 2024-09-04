@@ -54,6 +54,9 @@ void mt_error_emit(mt_error* err) {
 
   (void)len;
 
+  source_file* cur_source =
+      mt_driver_get_current_source(mt_driver_get_cur_instance());
+
   // node の実装がめんどいのでとりあえず token
   // からつくられたことにする
   if (err->node)

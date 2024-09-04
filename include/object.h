@@ -11,6 +11,8 @@
 #define IS_STRING(obj) (obj->typeinfo.kind == TYPE_STRING)
 #define IS_VECTOR(obj) (obj->typeinfo.kind == TYPE_VECTOR)
 
+struct mt_node;
+
 //
 //  mt_object:
 //    the data structure of value in metro.
@@ -28,7 +30,7 @@ typedef struct {
     bool vb;
     u16 vc;
 
-    mt_node* vfn;
+    struct mt_node* vfn;
 
     // when TYPE_STRING
     vector* vs; // => vector<u16>

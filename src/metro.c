@@ -1,22 +1,28 @@
 #include <string.h>
 #include "parser.h"
 #include "eval.h"
+#include "check.h"
 #include "metro.h"
 
 static source_file* cur_source;
+static mt_driver* _g_instance;
 
-mtdriver* mt_driver_new(char* path) {
-  mtdriver* dr = calloc(1, sizeof(mtdriver));
+mt_driver* mt_driver_new(char* path) {
+  mt_driver* dr = calloc(1, sizeof(mt_driver));
 
   dr->source = source_file_new(path);
 
   return dr;
 }
 
-void mt_driver_free(mtdriver* dr) {
+void mt_driver_free(mt_driver* dr) {
   // todo: free lexer
 
   free(dr);
+}
+
+mt_driver* mt_driver_get_cur_instance() {
+  return _g_instance;
 }
 
 // debug
@@ -69,7 +75,7 @@ void print_token(mt_token* tok) {
   printf("}\n");
 }
 
-int mt_driver_main(mtdriver* dr, int argc, char** argv) {
+int mt_driver_main(mt_driver* dr, int argc, char** argv) {
   (void)argc;
   (void)argv;
 
@@ -88,6 +94,12 @@ int mt_driver_main(mtdriver* dr, int argc, char** argv) {
 
   // print_node(nd);
   // puts("\n");
+
+  //
+  // check
+  mt_ck_check(nd);
+
+  return 0;
 
   mt_eval_init();
 
@@ -108,6 +120,6 @@ int mt_driver_main(mtdriver* dr, int argc, char** argv) {
   return 0;
 }
 
-source_file* mt_driver_get_current_source(mtdriver* dr) {
+source_file* mt_driver_get_current_source(mt_driver* dr) {
   return cur_source;
 }

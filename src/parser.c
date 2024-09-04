@@ -515,6 +515,7 @@ static mt_node* p_stmt() {
     node = node_new(ND_VARDEF);
 
     token = expect_identifier();
+
     node->name = token->str;
     node->len = token->len;
 
