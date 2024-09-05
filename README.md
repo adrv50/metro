@@ -3,9 +3,11 @@ Used utf-convertion library from
 
 # Metro: a simple typed interpreter language.
 
+実装途中
+
 # How build
 ```
-$ ./build.sh
+$ make
 ```
 
 ## Example
