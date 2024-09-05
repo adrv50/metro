@@ -14,8 +14,15 @@ static mt_object* _bltin_print(int argc, mt_object** args) {
 static mt_builtin_func_t _builtin_functions[] = {
   { "print", 5, _bltin_print, (mt_type_info[]){{TYPE_STRING}}, -1, {TYPE_INT} }
 };
+
+static const int _bfunctions_count =
+  sizeof(_builtin_functions) / sizeof(mt_builtin_func_t);
 // clang-format on
 
 mt_builtin_func_t const* mt_get_builtin_functions() {
   return _builtin_functions;
+}
+
+int mt_get_builtin_functions_count() {
+  return _bfunctions_count;
 }

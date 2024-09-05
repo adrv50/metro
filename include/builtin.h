@@ -17,3 +17,4 @@ typedef struct {
 } mt_builtin_func_t;
 
 mt_builtin_func_t const* mt_get_builtin_functions();
+int mt_get_builtin_functions_count();

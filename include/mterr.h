@@ -21,6 +21,8 @@ typedef enum {
 
   ERR_USE_BEFORE_TYPE_DEDUCTION,
 
+  ERR_TRY_TO_CALL_NOT_CALLABLE,
+
   // parser: unexpected token
   ERR_UNEXPECTED_TOKEN,
 

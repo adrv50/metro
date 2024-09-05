@@ -29,7 +29,8 @@ vector* vector_copy(vector* v);
 // destructor
 void vector_free(vector* v);
 
-void vector_resize(vector* v, size_t n);
+vector* vector_resize(vector* v, size_t n);
+vector* vector_extend(vector* v, size_t add_count);
 
 // add item
 void* vector_append(vector* v, void* item);

@@ -82,11 +82,17 @@ void vector_free(vector* v) {
   free(v);
 }
 
-void vector_resize(vector* v, size_t n) {
+vector* vector_resize(vector* v, size_t n) {
   vector_clear(v);
   vector_make_buffer(v, n);
 
   v->count = n;
+
+  return v;
+}
+
+vector* vector_extend(vector* v, size_t add_count) {
+  return vector_resize(v, v->count + add_count);
 }
 
 void* vector_append(vector* v, void* item) {

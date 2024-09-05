@@ -3,10 +3,11 @@
 #include <assert.h>
 
 #include "alert.h"
-#include "check.h"
 #include "metro.h"
-
 #include "mterr.h"
+
+#include "check.h"
+#include "builtin.h"
 
 static mt_type_info check(mt_node* node);
 
@@ -195,7 +196,7 @@ static emu_lvar_t* ck_find_variable(char const* name, int len) {
 typedef enum {
   ID_VARIABLE,
 
-  ID_FUNCTION, // name of function
+  ID_FUNCTION,
 
   ID_ENUM,
   ID_STRUCT,
@@ -203,15 +204,21 @@ typedef enum {
 
   ID_NAMESPACE,
 
+  // builtin
+  ID_BLT_FUNC,
+
   ID_UNKNOWN,
 
 } identifier_kind;
 
 typedef struct {
-  mt_node* nd;
   identifier_kind kind;
 
+  mt_node* nd;
+
   emu_lvar_t* p_lvar; // if variable
+
+  mt_builtin_func_t const* builtin_func;
 
 } identifier_info_t;
 
@@ -260,6 +267,12 @@ identifier_info_t ck_get_identififer_info(mt_node* node) {
 
   // scope resolution operator "::"
   if (node->kind == ND_SCOPE_RESOLUTION) {
+    if (nd_rhs(node)->kind != ND_IDENTIFIER) {
+      alert;
+      mt_add_error_from_token(ERR_INVALID_SYNTAX, "invalid syntax",
+                              nd_rhs(node)->tok);
+    }
+
     // get info of left side
     identifier_info_t leftinfo =
         ck_get_identififer_info(nd_lhs(node));
@@ -272,14 +285,7 @@ identifier_info_t ck_get_identififer_info(mt_node* node) {
       break;
 
     default:
-      mt_add_error_from_token(ERR_INVALID_SYNTAX, "f49k2aGxx",
-                              node->tok);
-    }
-
-    if (nd_rhs(node)->kind != ND_IDENTIFIER) {
-      alert;
-      mt_add_error_from_token(ERR_INVALID_SYNTAX, "invalid syntax",
-                              nd_rhs(node)->tok);
+      mt_add_error_from_token(ERR_INVALID_SYNTAX, "", node->tok);
     }
 
     mt_node* found = find_name_in_node(
@@ -296,13 +302,30 @@ identifier_info_t ck_get_identififer_info(mt_node* node) {
   }
   else {
 
-    idinfo.p_lvar = ck_find_variable(node->name, node->len);
-
-    if (idinfo.p_lvar) {
+    //
+    // find variable
+    if ((idinfo.p_lvar = ck_find_variable(node->name, node->len))) {
       idinfo.kind = ID_VARIABLE;
       idinfo.nd = idinfo.p_lvar->decl;
 
       return idinfo;
+    }
+
+    //
+    // find builtin function
+    mt_builtin_func_t const* bfun = mt_get_builtin_functions();
+
+    for (int i = 0; i < mt_get_builtin_functions_count();
+         i++, bfun++) {
+
+      if (bfun->namelen == node->len &&
+          !strncmp(bfun->name, node->name, node->len)) {
+
+        idinfo.kind = ID_BLT_FUNC;
+        idinfo.builtin_func = bfun;
+
+        return idinfo;
+      }
     }
 
     for (int i = (int)blockctx_stack->count - 1; i >= 0; i--) {
@@ -392,6 +415,11 @@ static mt_type_info check(mt_node* node) {
 
       return idinfo.p_lvar->type;
     }
+
+    case ID_BLT_FUNC: {
+      node->callee_builtin = idinfo.builtin_func;
+      return mt_type_info_new(TYPE_FUNCTION);
+    }
     }
 
     todo_impl;
@@ -401,7 +429,16 @@ static mt_type_info check(mt_node* node) {
 
   case ND_CALLFUNC: {
 
-    alert;
+    mt_type_info fun = check(nd_lhs(node));
+
+    if (fun.kind != TYPE_FUNCTION) {
+      mt_add_error_from_token(ERR_TRY_TO_CALL_NOT_CALLABLE,
+                              "not callable", node->tok);
+    }
+
+    for (int i = 0; i < node->child->count; i++) {
+      check(nd_get_child(node, i));
+    }
 
     break;
   }

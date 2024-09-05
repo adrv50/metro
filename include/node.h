@@ -3,6 +3,7 @@
 #include "token.h"
 #include "vector.h"
 #include "object.h"
+#include "builtin.h"
 
 // clang-format off
 
@@ -140,6 +141,9 @@ typedef struct __attribute__((__packed__)) {
 
   struct mt_ck_checked_log_t* checked;
 
+  struct mt_node* callee_nd;
+  mt_builtin_func_t const* callee_builtin;
+
   union {
     // when ND_VALUE
     mt_object* value;
@@ -168,3 +172,5 @@ mt_node** node_append(mt_node* node, mt_node* item);
 bool node_is_same_name(mt_node* node, char const* name);
 
 void print_node(mt_node* nd);
+
+char* node_to_string(mt_node* node);
