@@ -19,7 +19,10 @@
         "compile.h": "c",
         "errno.h": "c",
         "token.h": "c",
-        "source.h": "c"
+        "source.h": "c",
+        "mterr.h": "c",
+        "vector": "c",
+        "typeinfo": "c"
     },
 
     "editor.formatOnSave": true,

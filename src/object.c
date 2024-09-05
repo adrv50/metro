@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "alert.h"
 #include "object.h"
 #include "utf-convert.h"
 
@@ -12,12 +14,37 @@ mt_type_info mt_type_info_new(mt_type_kind kind) {
   return ti;
 }
 
+bool mt_type_is_equal(mt_type_info a, mt_type_info b) {
+  if (a.kind != b.kind)
+    return false;
+
+  if (a.is_const != b.is_const)
+    return false;
+
+  if (a.params->count >= 1 && b.params->count == a.params->count) {
+    for (int i = 0; i < a.params->count; i++) {
+      if (!mt_type_is_equal(vector_get_as(mt_type_info, a.params, i),
+                            vector_get_as(mt_type_info, b.params, i)))
+        return false;
+    }
+  }
+
+  return true;
+}
+
 mt_object* mt_obj_new(mt_type_info typeinfo) {
   mt_object* obj = calloc(1, sizeof(mt_object));
 
   obj->typeinfo = typeinfo;
 
   return obj;
+}
+
+void mt_obj_force_free(mt_object* obj) {
+  if (IS_STRING(obj) || IS_VECTOR(obj))
+    vector_free(obj->vs);
+
+  free(obj);
 }
 
 mt_object* mt_obj_new_int(i64 v) {
@@ -52,7 +79,7 @@ mt_object* mt_obj_new_char(u16 v) {
   return obj;
 }
 
-mt_object* mt_obj_new_string() {
+mt_object* mt_obj_new_string(void) {
   mt_object* obj = mt_obj_new(mt_type_info_new(TYPE_STRING));
 
   obj->vs = vector_new(sizeof(u16));
@@ -60,12 +87,17 @@ mt_object* mt_obj_new_string() {
   return obj;
 }
 
-mt_object* mt_obj_new_vector() {
+mt_object* mt_obj_new_vector(void) {
   mt_object* obj = mt_obj_new(mt_type_info_new(TYPE_VECTOR));
 
   obj->vv = vector_new(sizeof(mt_object*));
 
   return obj;
+}
+
+mt_object* mt_obj_clone(mt_object* obj) {
+
+  todo_impl;
 }
 
 bool mt_obj_is_numeric(mt_object* obj) {
@@ -79,6 +111,9 @@ bool mt_obj_is_numeric(mt_object* obj) {
 }
 
 void print_object(mt_object* obj) {
+  if (!obj)
+    return;
+
   switch (obj->typeinfo.kind) {
   case TYPE_INT:
     printf("%lu", obj->vi);
@@ -103,7 +138,8 @@ void print_object(mt_object* obj) {
     size_t const buflen = obj->vs->count * 3;
     char buf[buflen];
 
-    size_t res = utf16_to_utf8((u8*)buf, (u16*)obj->vs->_data, buflen);
+    size_t res =
+        utf16_to_utf8((u8*)buf, (u16*)obj->vs->_data, buflen);
 
     buf[res] = 0;
 

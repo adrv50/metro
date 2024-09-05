@@ -82,6 +82,19 @@ void vector_free(vector* v) {
   free(v);
 }
 
+vector* vector_resize(vector* v, size_t n) {
+  vector_clear(v);
+  vector_make_buffer(v, n);
+
+  v->count = n;
+
+  return v;
+}
+
+vector* vector_extend(vector* v, size_t add_count) {
+  return vector_resize(v, v->count + add_count);
+}
+
 void* vector_append(vector* v, void* item) {
   vector_make_buffer(v, 1);
 
@@ -121,6 +134,16 @@ void* vector_insert_vector(vector* v, size_t index, vector* vec) {
   v->count += vec->count;
 
   return memcpy(vector_get(v, index), vec->_data, vector_size(vec));
+}
+
+void vector_clear(vector* v) {
+  v->count = 0;
+  v->_actual_count = VEC_INITIALIZE_COUNT;
+
+  v->_datasize = v->type_width * v->_actual_count;
+
+  free(v->_data);
+  v->_data = calloc(1, v->_datasize);
 }
 
 void vector_pop_back(vector* v) {

@@ -1,92 +1,32 @@
 #include <string.h>
 #include "parser.h"
 #include "eval.h"
+#include "check.h"
 #include "metro.h"
+#include "mterr.h"
 
-/*
-・なぜこうするのか？　何を思ってこうした？
-　その瞬間思ったことならば　それをコメントに書こう
+static vector* _instances;
 
-・コメントは、未来の自分に宛てた手紙
-*/
+mt_driver* mt_driver_new(char* path) {
+  mt_driver* dr = calloc(1, sizeof(mt_driver));
 
-static mt_error _err_top;
-static mt_error* errptr;
-
-static source_file* cur_source;
-
-mt_error* mt_new_error(mt_err_kind_t kind, char const* msg,
-                       size_t pos) {
-  mt_error* err = calloc(1, sizeof(mt_error));
-
-  err->kind = kind;
-  err->msg = msg;
-
-  err->position = pos;
-
-  errptr->_next = err;
-  errptr = errptr->_next;
-
-  return err;
-}
-
-mt_error* mt_new_error_from_token(mt_err_kind_t kind, char const* msg,
-                                  mt_token* token) {
-  mt_error* err = mt_new_error(kind, msg, 0);
-
-  err->token = token;
-
-  return err;
-}
-
-mt_error* mt_new_error_from_node(mt_err_kind_t kind, char const* msg,
-                                 mt_node* node) {
-  mt_error* err = mt_new_error(kind, msg, 0);
-
-  err->node = node;
-
-  return err;
-}
-
-void mt_error_emit(mt_error* err) {
-  size_t pos;
-  size_t len;
-
-  (void)len;
-
-  // node の実装がめんどいのでとりあえず token
-  // からつくられたことにする
-  if (err->node)
-    err->token = err->node->tok;
-
-  if (err->token) {
-    pos = err->token->pos;
-    len = err->token->len;
-  }
-  else {
-    todo_impl;
-  }
-
-  printf("error! '%s' pos = %zu\n", err->msg, pos);
-}
-
-void mt_abort_with(mt_error* err) {
-  mt_error_emit(err);
-  exit(1);
-}
-
-mtdriver* driver_new(char* path) {
-  mtdriver* dr = calloc(1, sizeof(mtdriver));
+  vector_append(_instances, &dr);
 
   dr->source = source_file_new(path);
 
   return dr;
 }
 
-void driver_free(mtdriver* dr) {
+void mt_driver_free(mt_driver* dr) {
   // todo: free lexer
 
+  vector_pop_back(_instances);
+
   free(dr);
+}
+
+mt_driver* mt_driver_get_cur_instance() {
+  return *(mt_driver**)(vector_last(_instances));
 }
 
 // debug
@@ -139,36 +79,24 @@ void print_token(mt_token* tok) {
   printf("}\n");
 }
 
-int driver_main(mtdriver* dr, int argc, char** argv) {
+int mt_driver_main(mt_driver* dr, int argc, char** argv) {
   (void)argc;
   (void)argv;
-
-  metro_init();
 
   dr->lexer = lexer_new(dr->source);
 
   mt_token* tok = lexer_lex(dr->lexer);
-
-  // mt_abort_with(mt_new_error_from_token(ERR_INVALID_TOKEN, "test
-  // error", tok));
-
-  // print_token(tok);
+  mt_error_check();
 
   mt_node* nd = parser_parse(dr->source, tok);
 
-  // print_node(nd);
-  // puts("\n");
+  mt_error_check();
 
-  mt_eval_init();
+  // check
+  mt_ck_check(nd);
+  mt_error_check();
 
-  mt_object* result = mt_eval_evalfull(nd);
-
-  // printf("%ld\n", result->vi);
-
-  print_object(result);
-  puts("");
-
-  // compiler_compile_full(nd);
+  // mt_eval_evalfull(nd);
 
   node_free(nd);
   metro_exit();
@@ -176,17 +104,18 @@ int driver_main(mtdriver* dr, int argc, char** argv) {
   return 0;
 }
 
-source_file* driver_get_current_source(mtdriver* dr) {
-  return cur_source;
+source_file* mt_driver_get_current_source(mt_driver* dr) {
+  return dr->source;
 }
 
 void metro_init() {
-  errptr = &_err_top;
+  mt_err_init();
+
+  _instances = vector_new(sizeof(mt_driver*));
 }
 
 void metro_exit() {
-  // mt_error のメモリは解放しない
-  // エラーが発生した時点でアプリケーションが終了することが予測できます
+  mt_err_exit();
 
-  // 警告だけを出して続行するならば、厳しくエラーを出して終了したい
+  vector_free(_instances);
 }
