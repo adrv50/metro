@@ -111,6 +111,9 @@ enum {
 
   ND_ENUM,
   ND_STRUCT,
+  ND_CLASS,
+
+  ND_NAMESPACE,
 
   ND_PROGRAM, // (root)
 };

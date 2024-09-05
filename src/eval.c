@@ -454,5 +454,11 @@ void mt_eval_exit(void) {
 }
 
 mt_object* mt_eval_evalfull(mt_node* node) {
-  return evaluate(node);
+  mt_eval_init();
+
+  mt_object* result = evaluate(node);
+
+  mt_eval_exit();
+
+  return result;
 }

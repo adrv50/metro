@@ -96,11 +96,7 @@ int mt_driver_main(mt_driver* dr, int argc, char** argv) {
   mt_ck_check(nd);
   mt_error_check();
 
-  mt_eval_init();
-
-  mt_eval_evalfull(nd);
-
-  mt_eval_exit();
+  // mt_eval_evalfull(nd);
 
   node_free(nd);
   metro_exit();

@@ -17,6 +17,8 @@ typedef enum {
 
   ERR_UNDEFINED_VARIABLE,
 
+  ERR_CANNOT_FIND_NAME,
+
   // parser: unexpected token
   ERR_UNEXPECTED_TOKEN,
 
@@ -45,6 +47,10 @@ mt_error* mt_add_error(mt_err_kind_t kind, char const* msg,
 
 mt_error* mt_add_error_from_token(mt_err_kind_t kind, char const* msg,
                                   mt_token* token);
+
+mt_error* mt_add_error_from_token_with_fmt(mt_err_kind_t kind,
+                                           mt_token* token,
+                                           char const* fmt, ...);
 
 mt_error* mt_add_error_from_node(mt_err_kind_t kind, char const* msg,
                                  mt_node* node);

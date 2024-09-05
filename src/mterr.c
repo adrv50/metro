@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdarg.h>
+
 #include "mterr.h"
 #include "metro.h"
 
@@ -37,6 +40,21 @@ mt_error* mt_add_error_from_token(mt_err_kind_t kind, char const* msg,
   err->token = token;
 
   return err;
+}
+
+mt_error* mt_add_error_from_token_with_fmt(mt_err_kind_t kind,
+                                           mt_token* token,
+                                           char const* fmt, ...) {
+
+  static char buf[0x100];
+
+  va_list ap;
+  va_start(ap, fmt);
+
+  vsprintf(buf, fmt, ap);
+  va_end(ap);
+
+  return mt_add_error_from_token(kind, buf, token);
 }
 
 mt_error* mt_add_error_from_node(mt_err_kind_t kind, char const* msg,
@@ -90,7 +108,7 @@ void mt_error_emit(mt_error* err) {
     }
   }
 
-  int pos_on_line = pos - beginpos - 1;
+  int pos_on_line = pos - beginpos;
 
   line = src->data + beginpos;
   line_len = endpos - beginpos;
@@ -98,7 +116,7 @@ void mt_error_emit(mt_error* err) {
   bool is_warn = false; /* feature, TODO */
 
   printf(COL_BOLD COL_WHITE "%s:%d:%d: %s " COL_WHITE "%s\n",
-         src->path, linenum, pos_on_line,
+         src->path, linenum, pos_on_line + 1,
          is_warn ? (COL_MAGENTA "warning:") : (COL_RED "error:"),
          err->msg);
 
@@ -106,7 +124,7 @@ void mt_error_emit(mt_error* err) {
   printf(" % 3d | %.*s\n", linenum, line_len, line);
 
   printf("     | ");
-  for (int i = 1; i < pos_on_line; i++)
+  for (int i = 1; i <= pos_on_line; i++)
     printf(" ");
 
   printf("^\n     |\n");

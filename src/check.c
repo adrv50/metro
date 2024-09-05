@@ -32,7 +32,9 @@ typedef struct {
 
 typedef struct {
   struct block_context_t* block;
+
   vector* list; // vector<emu_lvar_t>
+
 } emu_varlist_t;
 
 static emu_varlist_t* new_emuvlist(struct block_context_t* blk,
@@ -70,17 +72,30 @@ emu_varlist_append_variable(emu_varlist_t* vlist, char const* name,
 
 struct block_context_t {
   mt_node* block;
+
   emu_varlist_t* vlist;
+
+  vector* functions; // vector<mt_node*>
 };
 
 static vector* blockctx_stack; // vector<block_context_t>
 
 static block_context_t* ck_enter_block(mt_node* blk) {
-  block_context_t temp = {0};
-  block_context_t* ctx = vector_append(blockctx_stack, &temp);
+  block_context_t tmp = {0};
+  block_context_t* ctx = vector_append(blockctx_stack, &tmp);
 
   ctx->block = blk;
   ctx->vlist = new_emuvlist(ctx, vector_new(sizeof(emu_lvar_t)));
+
+  ctx->functions = vector_new(sizeof(mt_node*));
+
+  for (int i = 0; i < blk->child->count; i++) {
+    switch (nd_get_child(blk, i)->kind) {
+    case ND_FUNCTION:
+      vector_append(ctx->functions, &nd_get_child(blk, i));
+      break;
+    }
+  }
 
   return ctx;
 }
@@ -138,21 +153,170 @@ static void ck_define_variable(mt_node* node) {
   }
 }
 
+typedef enum {
+  ID_VARIABLE,
+
+  ID_FUNCTION, // name of function
+
+  ID_ENUM,
+  ID_STRUCT,
+  ID_CLASS,
+
+  ID_NAMESPACE,
+
+  ID_UNKNOWN,
+
+} identifier_kind;
+
+typedef struct {
+  mt_node* nd;
+  identifier_kind kind;
+
+} identifier_info_t;
+
+mt_node* find_name_in_node(mt_node* node, char const* name, int len) {
+  /*
+  switch (node->kind) {
+  case ND_ENUM:
+  case ND_STRUCT:
+  case ND_CLASS:
+  case ND_NAMESPACE:
+    break;
+
+  default:
+    alertmsg(called find_name_in_node() but node is not enum or
+             struct or class or namespace.);
+  }
+  */
+
+  for (int i = 0; i < node->child->count; i++) {
+    mt_node* nd = nd_get_child(node, i);
+
+    switch (nd->kind) {
+    case ND_ENUM:
+    case ND_STRUCT:
+    case ND_CLASS:
+    case ND_NAMESPACE:
+    case ND_VARDEF:
+    case ND_FUNCTION:
+      if (nd->len == node->len &&
+          strncmp(nd->name, node->name, node->len) == 0)
+        return nd;
+    }
+  }
+
+  return NULL;
+}
+
+//
+//  ck_get_identififer_info()
+//
+//  識別子から関数、変数などを探す
+//
+identifier_info_t ck_get_identififer_info(mt_node* node) {
+  identifier_info_t idinfo = {0};
+
+  idinfo.kind = ID_UNKNOWN;
+
+  // scope resolution operator "::"
+  if (node->kind == ND_SCOPE_RESOLUTION) {
+    // get info of left side
+    identifier_info_t leftinfo =
+        ck_get_identififer_info(nd_lhs(node));
+
+    switch (leftinfo.kind) {
+    case ID_ENUM:
+    case ID_STRUCT:
+    case ID_CLASS:
+    case ID_NAMESPACE:
+      break;
+
+    default:
+      mt_add_error_from_token(ERR_INVALID_SYNTAX, "f49k2aGxx",
+                              node->tok);
+    }
+
+    if (nd_rhs(node)->kind != ND_IDENTIFIER) {
+      alert;
+      mt_add_error_from_token(ERR_INVALID_SYNTAX, "invalid syntax",
+                              nd_rhs(node)->tok);
+    }
+
+    mt_node* found = find_name_in_node(
+        leftinfo.nd, nd_rhs(node)->name, nd_rhs(node)->len);
+
+    if (!found) {
+      mt_add_error_from_token_with_fmt(
+          ERR_CANNOT_FIND_NAME, nd_rhs(node)->tok,
+          "'%s' is not named in '%s'", nd_rhs(node)->tok,
+          "ABCDEF12345");
+    }
+
+    idinfo.nd = found;
+  }
+  else {
+    for (int i = (int)blockctx_stack->count - 1; i >= 0; i--) {
+      alert;
+
+      block_context_t* ctx =
+          (block_context_t*)vector_get(blockctx_stack, i);
+
+      mt_node* ndfind =
+          find_name_in_node(ctx->block, node->name, node->len);
+
+      if (ndfind) {
+        idinfo.nd = ndfind;
+        break;
+      }
+    }
+  }
+
+  if (!idinfo.nd) {
+    mt_add_error_from_token(ERR_CANNOT_FIND_NAME, "no name found",
+                            node->tok);
+
+    mt_error_emit_and_exit();
+  }
+
+  switch (idinfo.nd->kind) {
+  case ND_VARDEF:
+    idinfo.kind = ID_VARIABLE;
+    break;
+
+  case ND_FUNCTION:
+    idinfo.kind = ID_FUNCTION;
+    break;
+
+  default:
+    todo_impl;
+  }
+
+  return idinfo;
+}
+
 static mt_type_info check(mt_node* node) {
+
+  if (node->kind > _NDKIND_BEGIN_OF_LR_OP_EXPR_ &&
+      node->kind < _NDKIND_END_OF_LR_OP_EXPR_) {
+
+    mt_type_info left = check(nd_lhs(node)),
+                 right = check(nd_rhs(node));
+
+    return left;
+  }
 
   switch (node->kind) {
   case ND_VALUE:
     assert(node->value);
     break;
 
-  case ND_IDENTIFIER: {
-    alert;
-
-    break;
-  }
-
+  case ND_IDENTIFIER:
   case ND_SCOPE_RESOLUTION: {
+
+    identifier_info_t idinfo = ck_get_identififer_info(node);
+
     alert;
+    printf("%d\n", idinfo.kind);
 
     break;
   }

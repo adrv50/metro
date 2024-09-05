@@ -20,7 +20,8 @@
         "errno.h": "c",
         "token.h": "c",
         "source.h": "c",
-        "mterr.h": "c"
+        "mterr.h": "c",
+        "vector": "c"
     },
 
     "editor.formatOnSave": true,
