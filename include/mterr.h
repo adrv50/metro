@@ -19,6 +19,8 @@ typedef enum {
 
   ERR_CANNOT_FIND_NAME,
 
+  ERR_USE_BEFORE_TYPE_DEDUCTION,
+
   // parser: unexpected token
   ERR_UNEXPECTED_TOKEN,
 

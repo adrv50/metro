@@ -127,6 +127,8 @@ typedef struct {
   bool is_const;
 } typename_node_data_t;
 
+struct mt_ck_checked_log_t;
+
 typedef struct __attribute__((__packed__)) {
   mt_node_kind kind;
   mt_token* tok;
@@ -136,11 +138,13 @@ typedef struct __attribute__((__packed__)) {
   char const* name;
   int len;
 
+  struct mt_ck_checked_log_t* checked;
+
   union {
     // when ND_VALUE
     mt_object* value;
 
-    // ND_VARIABLE (or expr)
+    // ND_VARIABLE, ND_VARDEF (or expr)
     struct {
       int vdepth;
       int index;

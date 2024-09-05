@@ -2,6 +2,21 @@
 
 #include "node.h"
 
+struct mt_ck_checked_log_t {
+
+  union {
+    //
+    // identifier or scope-resol
+    struct {
+      bool is_found;
+      mt_node* ptr_to;
+
+    } when_ident;
+  };
+};
+
+typedef struct mt_ck_checked_log_t mt_ck_checked_log_t;
+
 //
 // evaluate type of expr
 //

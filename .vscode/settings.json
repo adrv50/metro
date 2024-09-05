@@ -21,7 +21,8 @@
         "token.h": "c",
         "source.h": "c",
         "mterr.h": "c",
-        "vector": "c"
+        "vector": "c",
+        "typeinfo": "c"
     },
 
     "editor.formatOnSave": true,

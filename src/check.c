@@ -24,10 +24,16 @@ typedef struct block_context_t block_context_t;
 
 typedef struct {
   mt_node* decl;
+
   char const* name;
   int namelen;
+
+  int depth;
+  int index;
+
   mt_type_info type;
   bool is_type_deducted;
+
 } emu_lvar_t;
 
 typedef struct {
@@ -108,17 +114,13 @@ static void ck_leave_block() {
   block_context_t* blk = ck_get_cur_block_ctx();
 
   vector_free(blk->vlist->list);
+  free(blk->vlist);
 
   vector_pop_back(blockctx_stack);
 }
 
-static void ck_find_variable(mt_node* node) {
-  assert(node->kind == ND_IDENTIFIER || node->kind ||
-         ND_SCOPE_RESOLUTION);
-}
-
-static void ck_define_variable(mt_node* node) {
-  assert(node->kind == ND_VARDEF);
+static emu_lvar_t* ck_define_variable(mt_node* letnode) {
+  assert(letnode->kind == ND_VARDEF);
 
   emu_varlist_t* cur_vlist = ck_get_cur_block_ctx()->vlist;
   emu_lvar_t* pv = NULL;
@@ -126,31 +128,68 @@ static void ck_define_variable(mt_node* node) {
   for (int i = 0; i < cur_vlist->list->count; i++) {
     emu_lvar_t* var = (emu_lvar_t*)vector_get(cur_vlist->list, i);
 
-    if (var->namelen == node->len &&
-        strncmp(var->name, node->name, node->len) == 0) {
+    if (var->namelen == letnode->len &&
+        strncmp(var->name, letnode->name, letnode->len) == 0) {
       pv = var;
       break;
     }
   }
 
   if (!pv) {
-    pv =
-        emu_varlist_append_variable(cur_vlist, node->name, node->len,
-                                    (mt_type_info){TYPE_NONE}, false);
+    pv = emu_varlist_append_variable(
+        cur_vlist, letnode->name, letnode->len,
+        (mt_type_info){TYPE_NONE}, false);
   }
 
-  mt_node* ndtype = nd_let_type(node);
-  mt_node* ndinit = nd_let_init(node);
+  pv->depth = letnode->vdepth = blockctx_stack->count - 1;
+  pv->index = letnode->index = cur_vlist->list->count - 1;
+
+  mt_node* ndtype = nd_let_type(letnode);
+  mt_node* ndinit = nd_let_init(letnode);
 
   mt_type_info tptype, tpinit;
 
-  if (ndtype && ndinit) {
+  if (ndtype)
     tptype = check(ndtype);
+
+  if (ndinit)
     tpinit = check(ndinit);
 
-    if (!mt_type_is_equal(tptype, tpinit)) {
+  if (!ndtype && !ndinit)
+    return pv;
+  else
+    pv->is_type_deducted = true;
+
+  if (ndinit) {
+    if (ndtype) {
+      if (!mt_type_is_equal(tptype, tpinit)) {
+        mt_add_error_from_node(ERR_TYPE_MISMATCH, "type mismatch",
+                               ndinit);
+      }
+    }
+
+    pv->type = tpinit;
+  }
+  else if (ndtype) {
+    pv->type = tptype;
+  }
+
+  return pv;
+}
+
+static emu_lvar_t* ck_find_variable(char const* name, int len) {
+  for (int i = blockctx_stack->count - 1; i >= 0; i--) {
+    block_context_t* ctx = vector_get(blockctx_stack, i);
+
+    for (int j = 0; j < ctx->vlist->list->count; j++) {
+      emu_lvar_t* lvar = vector_get(ctx->vlist->list, j);
+
+      if (lvar->namelen == len && !strncmp(lvar->name, name, len))
+        return lvar;
     }
   }
+
+  return NULL;
 }
 
 typedef enum {
@@ -171,6 +210,8 @@ typedef enum {
 typedef struct {
   mt_node* nd;
   identifier_kind kind;
+
+  emu_lvar_t* p_lvar; // if variable
 
 } identifier_info_t;
 
@@ -199,8 +240,7 @@ mt_node* find_name_in_node(mt_node* node, char const* name, int len) {
     case ND_NAMESPACE:
     case ND_VARDEF:
     case ND_FUNCTION:
-      if (nd->len == node->len &&
-          strncmp(nd->name, node->name, node->len) == 0)
+      if (nd->len == len && strncmp(nd->name, name, len) == 0)
         return nd;
     }
   }
@@ -255,6 +295,16 @@ identifier_info_t ck_get_identififer_info(mt_node* node) {
     idinfo.nd = found;
   }
   else {
+
+    idinfo.p_lvar = ck_find_variable(node->name, node->len);
+
+    if (idinfo.p_lvar) {
+      idinfo.kind = ID_VARIABLE;
+      idinfo.nd = idinfo.p_lvar->decl;
+
+      return idinfo;
+    }
+
     for (int i = (int)blockctx_stack->count - 1; i >= 0; i--) {
       alert;
 
@@ -281,6 +331,7 @@ identifier_info_t ck_get_identififer_info(mt_node* node) {
   switch (idinfo.nd->kind) {
   case ND_VARDEF:
     idinfo.kind = ID_VARIABLE;
+
     break;
 
   case ND_FUNCTION:
@@ -292,6 +343,10 @@ identifier_info_t ck_get_identififer_info(mt_node* node) {
   }
 
   return idinfo;
+}
+
+static mt_ck_checked_log_t* ck_create_log(mt_node* node) {
+  return (node->checked = calloc(1, sizeof(mt_ck_checked_log_t)));
 }
 
 static mt_type_info check(mt_node* node) {
@@ -312,11 +367,34 @@ static mt_type_info check(mt_node* node) {
 
   case ND_IDENTIFIER:
   case ND_SCOPE_RESOLUTION: {
-
     identifier_info_t idinfo = ck_get_identififer_info(node);
 
-    alert;
-    printf("%d\n", idinfo.kind);
+    switch (idinfo.kind) {
+    case ID_VARIABLE: {
+
+      mt_ck_checked_log_t* chk = ck_create_log(node);
+
+      chk->when_ident.is_found = (idinfo.kind != ID_UNKNOWN);
+      chk->when_ident.ptr_to = idinfo.nd;
+
+      node->vdepth = idinfo.p_lvar->depth;
+      node->index = idinfo.p_lvar->index;
+
+      // alert;
+      // printf("%.*s\n", idinfo.nd->len, idinfo.nd->name);
+
+      if (!idinfo.p_lvar->is_type_deducted) {
+        mt_add_error_from_token(ERR_USE_BEFORE_TYPE_DEDUCTION,
+                                "use variable before type deduction",
+                                node->tok);
+        mt_error_emit_and_exit();
+      }
+
+      return idinfo.p_lvar->type;
+    }
+    }
+
+    todo_impl;
 
     break;
   }
