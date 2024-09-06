@@ -10,9 +10,19 @@ static mt_object* _bltin_print(int argc, mt_object** args) {
   return mt_obj_new_int(0);
 }
 
+static mt_object* _bltin_println(int argc, mt_object** args) {
+  for (int i = 0; i < argc; i++)
+    print_object(args[i]);
+
+  printf("\n");
+
+  return mt_obj_new_int(0);
+}
+
 // clang-format off
 static mt_builtin_func_t _builtin_functions[] = {
-  { "print", 5, _bltin_print, (mt_type_info[]){{TYPE_STRING}}, -1, {TYPE_INT} }
+  { "print", 5, _bltin_print, (mt_type_info[]){{TYPE_STRING}}, -1, {TYPE_INT} },
+  { "println", 7, _bltin_println, (mt_type_info[]){{TYPE_STRING}}, -1, {TYPE_INT} },
 };
 
 static const int _bfunctions_count =

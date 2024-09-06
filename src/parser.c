@@ -116,11 +116,6 @@ static void parse_typename(typename_node_data_t* data) {
   data->scope_resol = vector_new(sizeof(typename_node_data_t));
   data->params = vector_new(sizeof(typename_node_data_t));
 
-  while (eat("::")) {
-    parse_typename(vector_append(
-        data->scope_resol, calloc(1, sizeof(typename_node_data_t))));
-  }
-
   if (eat("<")) {
     do {
       parse_typename(vector_append(
@@ -140,6 +135,11 @@ static void parse_typename(typename_node_data_t* data) {
     }
 
     expect(">");
+  }
+
+  while (eat("::")) {
+    parse_typename(vector_append(
+        data->scope_resol, calloc(1, sizeof(typename_node_data_t))));
   }
 
   data->is_const = eat("const");

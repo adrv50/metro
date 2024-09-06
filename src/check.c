@@ -9,7 +9,16 @@
 #include "check.h"
 #include "builtin.h"
 
-static mt_type_info check(mt_node* node);
+typedef struct {
+  mt_node* node;
+  mt_type_info type;
+
+  mt_node* callee;
+  mt_builtin_func_t const* callee_builtin;
+
+} check_result_t;
+
+static check_result_t check(mt_node* node);
 
 static inline bool is_contain(mt_type_kind kind, mt_type_kind a,
                               mt_type_kind b) {
@@ -151,10 +160,10 @@ static emu_lvar_t* ck_define_variable(mt_node* letnode) {
   mt_type_info tptype, tpinit;
 
   if (ndtype)
-    tptype = check(ndtype);
+    tptype = check(ndtype).type;
 
   if (ndinit)
-    tpinit = check(ndinit);
+    tpinit = check(ndinit).type;
 
   if (!ndtype && !ndinit)
     return pv;
@@ -372,18 +381,27 @@ static mt_ck_checked_log_t* ck_create_log(mt_node* node) {
   return (node->checked = calloc(1, sizeof(mt_ck_checked_log_t)));
 }
 
-static mt_type_info check(mt_node* node) {
+static check_result_t check(mt_node* node) {
 
   if (node->kind > _NDKIND_BEGIN_OF_LR_OP_EXPR_ &&
       node->kind < _NDKIND_END_OF_LR_OP_EXPR_) {
 
-    mt_type_info left = check(nd_lhs(node)),
-                 right = check(nd_rhs(node));
+    check_result_t left = check(nd_lhs(node)),
+                   right = check(nd_rhs(node));
 
     return left;
   }
 
+  check_result_t result = {0};
+
+  result.node = node;
+
   switch (node->kind) {
+
+  case ND_TYPENAME:
+
+    break;
+
   case ND_VALUE:
     assert(node->value);
     break;
@@ -413,25 +431,31 @@ static mt_type_info check(mt_node* node) {
         mt_error_emit_and_exit();
       }
 
-      return idinfo.p_lvar->type;
+      result.type = idinfo.p_lvar->type;
+      break;
     }
 
     case ID_BLT_FUNC: {
       node->callee_builtin = idinfo.builtin_func;
-      return mt_type_info_new(TYPE_FUNCTION);
-    }
+
+      result.type = mt_type_info_new(TYPE_FUNCTION);
+      result.callee_builtin = idinfo.builtin_func;
+
+      break;
     }
 
-    todo_impl;
+    default:
+      todo_impl;
+    }
 
     break;
   }
 
   case ND_CALLFUNC: {
 
-    mt_type_info fun = check(nd_lhs(node));
+    check_result_t fun = check(nd_lhs(node));
 
-    if (fun.kind != TYPE_FUNCTION) {
+    if (fun.type.kind != TYPE_FUNCTION) {
       mt_add_error_from_token(ERR_TRY_TO_CALL_NOT_CALLABLE,
                               "not callable", node->tok);
     }
@@ -440,6 +464,12 @@ static mt_type_info check(mt_node* node) {
       check(nd_get_child(node, i));
     }
 
+    if (fun.callee_builtin) {
+      result.type = fun.callee_builtin->return_type;
+      break;
+    }
+
+    todo_impl;
     break;
   }
 
@@ -461,7 +491,7 @@ static mt_type_info check(mt_node* node) {
   }
   }
 
-  return mt_type_info_new(TYPE_NONE);
+  return result;
 }
 
 // ===============================
