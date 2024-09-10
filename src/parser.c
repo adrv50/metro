@@ -268,11 +268,11 @@ static mt_node* p_indexref() {
       expect("]");
     }
     else if (eat("(")) {
-      x = node_new_with_lr(ND_CALLFUNC, tok, x, NULL);
+      x = node_new_with_lr(ND_CALLFUNC, tok, x, node_new(ND_CALLFUNC_PARAMS));
 
       if (!eat(")")) {
         do {
-          node_append(x, p_expr());
+          nd_callfunc_add_param(x, p_expr());
         } while (check() && eat(","));
 
         expect(")");

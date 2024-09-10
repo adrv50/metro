@@ -122,203 +122,6 @@ static void mt_ev_leave_block(mt_node* block) {
   vector_pop_back(g_context.varlist_stack);
 }
 
-static inline int is_either_type(mt_type_kind K, mt_object* a,
-                                 mt_object* b) {
-  if (a->typeinfo.kind == K)
-    return 1;
-
-  if (b->typeinfo.kind == K)
-    return 2;
-
-  return 0;
-}
-
-static inline mt_object* to_float(mt_object* int_obj) {
-
-  switch (int_obj->typeinfo.kind) {
-  case TYPE_INT:
-    int_obj->vf = (float)(int_obj->vi);
-    break;
-
-  default:
-    todo_impl;
-  }
-
-  int_obj->typeinfo.kind = TYPE_FLOAT;
-
-  return int_obj;
-}
-
-//
-// -------------------------
-//  ND_MUL
-// -------------------------
-//
-static mt_object* mul_object(mt_object* left, mt_object* right) {
-
-  //
-  // str * int
-  if (IS_STRING(left) && IS_INT(right)) {
-  _label_mul_str_int:
-    mt_object* strobj = mt_obj_new_string();
-
-    for (int i = 0; i < right->vi; i++)
-      vector_append_vector(strobj->vs, left->vs);
-
-    return strobj;
-  }
-
-  //
-  // int * str ( --> swap and goto str*int )
-  else if (IS_INT(left) && IS_STRING(right)) {
-    swap(left, right);
-    goto _label_mul_str_int;
-  }
-
-  else {
-    todo_impl;
-  }
-
-  return left;
-}
-
-//
-// -------------------------
-//  ND_DIV
-// -------------------------
-//
-static mt_object* div_object(mt_object* left, mt_object* right) {
-
-  switch (left->typeinfo.kind) {
-  case TYPE_FLOAT:
-    if (IS_FLOAT(right))
-      left->vf /= right->vf;
-    else if (IS_INT(right))
-      left->vf /= (float)right->vi;
-    else
-      todo_impl;
-
-    break;
-
-  case TYPE_INT:
-    if (IS_FLOAT(right))
-      left->vi /= (int)right->vf;
-    else if (IS_INT(right))
-      left->vi /= right->vi;
-    else
-      todo_impl;
-
-    break;
-
-  default:
-    todo_impl;
-  }
-
-  return left;
-}
-
-//
-// -------------------------
-//  ND_MOD
-// -------------------------
-//
-static mt_object* mod_object(mt_object* left, mt_object* right) {
-
-  debug(assert(IS_INT(left) && IS_INT(right)));
-
-  left->vi %= right->vi;
-
-  return left;
-}
-
-//
-// -------------------------
-//  ND_ADD
-// -------------------------
-//
-static mt_object* add_object(mt_object* left, mt_object* right) {
-
-  //
-  // どっちも数値型
-  if (mt_obj_is_numeric(left) && mt_obj_is_numeric(right)) {
-    //
-    // どちらかが Float であれば、両方 Float にする
-    if (left->typeinfo.kind == TYPE_FLOAT) {
-      if (right->typeinfo.kind != TYPE_FLOAT)
-        right = to_float(right);
-    }
-    else if (right->typeinfo.kind == TYPE_FLOAT) {
-      if (left->typeinfo.kind != TYPE_FLOAT)
-        left = to_float(left);
-    }
-
-    assert(left->typeinfo.kind == right->typeinfo.kind);
-
-    switch (left->typeinfo.kind) {
-    case TYPE_INT:
-      left->vi += right->vi;
-      break;
-
-    case TYPE_FLOAT:
-      left->vf += right->vf;
-      break;
-    }
-  }
-
-  //
-  // str + str
-  else if (IS_STRING(left) && IS_STRING(right)) {
-    vector_append_vector(left->vs, right->vs);
-  }
-
-  else {
-    todo_impl;
-  }
-
-  return left;
-}
-
-//
-// -------------------------
-//  ND_SUB
-// -------------------------
-//
-static mt_object* sub_object(mt_object* left, mt_object* right) {
-
-  //
-  // どっちも数値型
-  if (mt_obj_is_numeric(left) && mt_obj_is_numeric(right)) {
-    //
-    // どちらかが Float であれば、両方 Float にする
-    if (left->typeinfo.kind == TYPE_FLOAT) {
-      if (right->typeinfo.kind != TYPE_FLOAT)
-        right = to_float(right);
-    }
-    else if (right->typeinfo.kind == TYPE_FLOAT) {
-      if (left->typeinfo.kind != TYPE_FLOAT)
-        left = to_float(left);
-    }
-
-    assert(left->typeinfo.kind == right->typeinfo.kind);
-
-    switch (left->typeinfo.kind) {
-    case TYPE_INT:
-      left->vi -= right->vi;
-      break;
-
-    case TYPE_FLOAT:
-      left->vf -= right->vf;
-      break;
-    }
-  }
-
-  else {
-    todo_impl;
-  }
-
-  return left;
-}
-
 //
 // ============================================
 //  Evaluator
@@ -332,6 +135,8 @@ static mt_object* evaluate(mt_node* node) {
 
     [ND_IDENTIFIER]         = &&case_identifier,
     [ND_SCOPE_RESOLUTION]   = &&case_scope_resolution,
+
+    [ND_CALLFUNC]   = &&case_callfunc,
 
     [ND_ASSIGN]     = &&case_assign,
 
@@ -353,35 +158,6 @@ static mt_object* evaluate(mt_node* node) {
 
   static mt_object* result;
 
-  switch (node->kind) {
-  case ND_CALLFUNC: {
-    mt_object* callee = evaluate(nd_get_child(node, 0));
-
-    if (!callee || callee->typeinfo.kind != TYPE_FUNCTION) {
-      mt_add_error_from_token(ERR_TYPE_MISMATCH,
-                              "tried to call not callable object",
-                              node->tok);
-    }
-
-    if( callee->vfn_builtin ) {
-      int argc = node->child->count - 1;
-      mt_object** argtable = calloc(argc + 1, sizeof(mt_object));
-
-      for( int i = 0; i < argc; i++ )
-        argtable[i] = evaluate(nd_get_child(node, i + 1));
-
-      result = callee->vfn_builtin->impl(argc, argtable);
-
-      free(argtable);
-    }
-    else {
-      todo_impl;
-    }
-
-    return result;
-  }
-  }
-
   if (node->kind >= _NDKIND_BEGIN_OF_LR_OP_EXPR_ &&
       node->kind <= _NDKIND_END_OF_LR_OP_EXPR_)
     goto case_lr_operator_expr;
@@ -393,12 +169,11 @@ static mt_object* evaluate(mt_node* node) {
   }
   goto* case_labels[node->kind];
 
-case_value:
-  return node->value;
+  case_value:
+    return node->value;
 
-case_identifier:
-case_scope_resolution:
-  {
+  case_identifier:
+  case_scope_resolution: {
     switch( node->id_info.kind ) {
       case NID_VARIABLE:
         return get_var_from_index(node->id_info.vdepth, node->id_info.index)->value;
@@ -412,33 +187,60 @@ case_scope_resolution:
 
     todo_impl;
   }
+  
+  case_callfunc: {
+    mt_object* callee = evaluate(nd_callfunc_callee(node));
 
-case_assign:
-  todo_impl;
+    if (!callee || callee->typeinfo.kind != TYPE_FUNCTION) {
+      mt_add_error_from_token(ERR_TYPE_MISMATCH,
+                              "tried to call not callable object",
+                              node->tok);
+    }
 
-case_block:
-  mt_ev_enter_block(node);
+    if( callee->vfn_builtin ) {
+      int argc = nd_callfunc_get_argcount(node);
+      mt_object** argtable = calloc(argc + 1, sizeof(mt_object));
 
-  for (size_t i = 0; i < node->child->count; i++)
-    result = evaluate(nd_get_child(node, i));
+      for( int i = 0; i < argc; i++ )
+        argtable[i] = evaluate(nd_callfunc_get_param(node, i));
 
-  mt_ev_leave_block(node);
+      result = callee->vfn_builtin->impl(argc, argtable);
 
-  return result;
+      free(argtable);
+    }
+    else {
+      todo_impl;
+    }
 
-case_vardef:
-  mt_ev_makevar(node);
-  return NULL;
-
-case_skip:
-  return NULL;
-
-case_lr_operator_expr:
-  if (!expr_eval_funcs[node->kind]) {
-    alertfmt("evaluator of node kind %d is not implemented",
-             node->kind);
-    exit(1);
+    return result;
   }
+
+  case_assign:
+    todo_impl;
+
+  case_block:
+    mt_ev_enter_block(node);
+
+    for (size_t i = 0; i < node->child->count; i++)
+      result = evaluate(nd_get_child(node, i));
+
+    mt_ev_leave_block(node);
+
+    return result;
+
+  case_vardef:
+    mt_ev_makevar(node);
+    return NULL;
+
+  case_skip:
+    return NULL;
+
+  case_lr_operator_expr:
+    if (!expr_eval_funcs[node->kind]) {
+      alertfmt("evaluator of node kind %d is not implemented",
+              node->kind);
+      exit(1);
+    }
 
   return expr_eval_funcs[node->kind](evaluate(nd_lhs(node)),
                                      evaluate(nd_rhs(node)));

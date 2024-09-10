@@ -20,3 +20,9 @@ struct mt_builtin_func_t {
 
 mt_builtin_func_t const* mt_get_builtin_functions();
 int mt_get_builtin_functions_count();
+
+mt_object* mul_object(mt_object* left, mt_object* right);
+mt_object* div_object(mt_object* left, mt_object* right);
+mt_object* mod_object(mt_object* left, mt_object* right);
+mt_object* add_object(mt_object* left, mt_object* right);
+mt_object* sub_object(mt_object* left, mt_object* right);

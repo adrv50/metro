@@ -112,8 +112,24 @@ mt_object* mt_obj_new_blt_func(mt_builtin_func_t const* builtin) {
 }
 
 mt_object* mt_obj_clone(mt_object* obj) {
+  mt_object* newobj = calloc(1, sizeof(mt_object));
 
-  todo_impl;
+  switch( obj->typeinfo.kind ) {
+    case TYPE_STRING:
+      newobj->vs = vector_copy(obj->vs);
+      break;
+
+    case TYPE_VECTOR:
+      newobj->vv = vector_copy(obj->vv);
+      break;
+
+    default:
+      newobj->vfn = obj->vfn;
+      newobj->vfn_builtin = obj->vfn_builtin;
+      break;
+  }
+
+  return newobj;
 }
 
 bool mt_obj_is_numeric(mt_object* obj) {

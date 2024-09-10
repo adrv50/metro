@@ -383,6 +383,9 @@ static mt_ck_checked_log_t* ck_create_log(mt_node* node) {
 
 static check_result_t check(mt_node* node) {
 
+  if( !node )
+    
+
   if (node->kind > _NDKIND_BEGIN_OF_LR_OP_EXPR_ &&
       node->kind < _NDKIND_END_OF_LR_OP_EXPR_) {
 
@@ -461,8 +464,8 @@ static check_result_t check(mt_node* node) {
                               "not callable", node->tok);
     }
 
-    for (int i = 0; i < node->child->count; i++) {
-      check(nd_get_child(node, i));
+    for (int i = 0; i < nd_callfunc_get_argcount(node); i++) {
+      check(nd_callfunc_get_param(node, i));
     }
 
     if (fun.callee_builtin) {

@@ -24,7 +24,8 @@
         "vector": "c",
         "typeinfo": "c",
         "builtin.h": "c",
-        "stdint.h": "c"
+        "stdint.h": "c",
+        "format": "c"
     },
 
     "editor.formatOnSave": false,

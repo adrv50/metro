@@ -37,6 +37,12 @@
 #define nd_func_get_param(n, i)   (nd_get_child(nd_func_params(n), i))
 #define nd_func_add_param(n, pn)  (*node_append(nd_func_params(n), pn))
 
+#define nd_callfunc_callee(n)         _N0(n)
+#define nd_callfunc_params(n)         _N1(n)
+#define nd_callfunc_add_param(n, n2)  (*node_append(nd_callfunc_params(n), n2))
+#define nd_callfunc_get_param(n, i)   (nd_get_child(nd_callfunc_params(n), i))
+#define nd_callfunc_get_argcount(n)   (nd_callfunc_params(n)->child->count)
+
 // clang-format on
 
 typedef u8 mt_node_kind;
@@ -56,11 +62,13 @@ enum {
 
   ND_SCOPE_RESOLUTION,
 
-  _NDKIND_BEGIN_OF_LR_OP_EXPR_,
-
-  ND_INDEXREF,      // [ ]
   ND_MEMBER_ACCESS, // .
   ND_CALLFUNC, // callfunc :=  <ident> "(" <expr> ("," <expr>)* ")"
+  ND_CALLFUNC_PARAMS,
+
+_NDKIND_BEGIN_OF_LR_OP_EXPR_,
+
+  ND_INDEXREF,      // [ ]
 
   ND_NOT, // !
 
@@ -82,7 +90,7 @@ enum {
   ND_BIT_XOR, // ^
   ND_BIT_OR,  // |
 
-  _NDKIND_END_OF_LR_OP_EXPR_,
+_NDKIND_END_OF_LR_OP_EXPR_,
 
   ND_ASSIGN, // =
 
