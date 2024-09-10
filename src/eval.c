@@ -46,6 +46,10 @@ static variable_list_t* mt_ev_ctx_get_current_varlist() {
   return (variable_list_t*)vector_last(g_context.varlist_stack);
 }
 
+static lvar_data_t* get_var_from_index(int depth, int index) {
+  return vector_get(vector_get_as(variable_list_t, g_context.varlist_stack, depth).varlist, index);
+}
+
 static lvar_data_t* mt_ev_find_variable(char const* name,
                                         size_t len) {
   for (i64 i = g_context.varlist_stack->count - 1; i >= 0; i--) {
@@ -323,11 +327,11 @@ static mt_object* sub_object(mt_object* left, mt_object* right) {
 static mt_object* evaluate(mt_node* node) {
   typedef mt_object* (*expr_fp_t)(mt_object*, mt_object*);
 
-  // clang-format off
   static int* case_labels[] = {
     [ND_VALUE]      = &&case_value,
-    [ND_VARIABLE]   = &&case_variable,
-    [ND_CALLFUNC]   = &&case_callfunc,
+
+    [ND_IDENTIFIER]         = &&case_identifier,
+    [ND_SCOPE_RESOLUTION]   = &&case_scope_resolution,
 
     [ND_ASSIGN]     = &&case_assign,
 
@@ -346,7 +350,6 @@ static mt_object* evaluate(mt_node* node) {
     [ND_ADD] = add_object,
     [ND_SUB] = sub_object,
   };
-  // clang-format on
 
   static mt_object* result;
 
@@ -360,9 +363,22 @@ static mt_object* evaluate(mt_node* node) {
                               node->tok);
     }
 
-    todo_impl;
+    if( callee->vfn_builtin ) {
+      int argc = node->child->count - 1;
+      mt_object** argtable = calloc(argc + 1, sizeof(mt_object));
 
-    break;
+      for( int i = 0; i < argc; i++ )
+        argtable[i] = evaluate(nd_get_child(node, i + 1));
+
+      result = callee->vfn_builtin->impl(argc, argtable);
+
+      free(argtable);
+    }
+    else {
+      todo_impl;
+    }
+
+    return result;
   }
   }
 
@@ -380,39 +396,22 @@ static mt_object* evaluate(mt_node* node) {
 case_value:
   return node->value;
 
-case_variable : {
-  lvar_data_t* var = mt_ev_find_variable(node->name, node->len);
+case_identifier:
+case_scope_resolution:
+  {
+    switch( node->id_info.kind ) {
+      case NID_VARIABLE:
+        return get_var_from_index(node->id_info.vdepth, node->id_info.index)->value;
 
-  if (!var) {
-    mt_add_error_from_token(ERR_UNDEFINED_VARIABLE,
-                            "undefined variable", node->tok);
+      case NID_FUNCTION:
+        return mt_obj_new_func(node->id_info.callee_nd);
+
+      case NID_BLT_FUNC:
+        return mt_obj_new_blt_func(node->id_info.callee_builtin);
+    }
+
+    todo_impl;
   }
-
-  return var->value;
-}
-
-//
-// ND_CALLFUNC
-//
-case_callfunc : {
-  mt_object* args[node->child->count];
-
-  for (size_t i = 0; i < node->child->count; i++)
-    args[i] = evaluate(nd_get_child(node, i));
-
-  //
-  // println
-  if (node->len >= 7 && strncmp(node->name, "println", 7) == 0) {
-    for (size_t i = 0; i < node->child->count; i++)
-      print_object(args[i]);
-
-    puts("");
-
-    return NULL;
-  }
-
-  todo_impl;
-}
 
 case_assign:
   todo_impl;

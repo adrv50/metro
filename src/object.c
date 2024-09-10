@@ -95,6 +95,22 @@ mt_object* mt_obj_new_vector(void) {
   return obj;
 }
 
+mt_object* mt_obj_new_func(mt_node* func) {
+  mt_object* obj = mt_obj_new(mt_type_info_new(TYPE_FUNCTION));
+
+  obj->vfn = func;
+
+  return obj;
+}
+
+mt_object* mt_obj_new_blt_func(mt_builtin_func_t const* builtin) {
+  mt_object* obj = mt_obj_new(mt_type_info_new(TYPE_FUNCTION));
+
+  obj->vfn_builtin = builtin;
+
+  return obj;
+}
+
 mt_object* mt_obj_clone(mt_object* obj) {
 
   todo_impl;

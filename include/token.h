@@ -17,8 +17,6 @@ enum {
   TOK_END
 };
 
-typedef struct mt_token mt_token;
-
 struct mt_token {
   mt_token_kind kind;
   struct mt_token* prev;

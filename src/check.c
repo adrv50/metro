@@ -151,8 +151,8 @@ static emu_lvar_t* ck_define_variable(mt_node* letnode) {
         (mt_type_info){TYPE_NONE}, false);
   }
 
-  pv->depth = letnode->vdepth = blockctx_stack->count - 1;
-  pv->index = letnode->index = cur_vlist->list->count - 1;
+  pv->depth = letnode->id_info.vdepth = blockctx_stack->count - 1;
+  pv->index = letnode->id_info.index = cur_vlist->list->count - 1;
 
   mt_node* ndtype = nd_let_type(letnode);
   mt_node* ndinit = nd_let_init(letnode);
@@ -411,18 +411,12 @@ static check_result_t check(mt_node* node) {
     identifier_info_t idinfo = ck_get_identififer_info(node);
 
     switch (idinfo.kind) {
+    // Variable
     case ID_VARIABLE: {
-
-      mt_ck_checked_log_t* chk = ck_create_log(node);
-
-      chk->when_ident.is_found = (idinfo.kind != ID_UNKNOWN);
-      chk->when_ident.ptr_to = idinfo.nd;
-
-      node->vdepth = idinfo.p_lvar->depth;
-      node->index = idinfo.p_lvar->index;
-
       // alert;
       // printf("%.*s\n", idinfo.nd->len, idinfo.nd->name);
+
+      node->id_info.kind = NID_VARIABLE;
 
       if (!idinfo.p_lvar->is_type_deducted) {
         mt_add_error_from_token(ERR_USE_BEFORE_TYPE_DEDUCTION,
@@ -431,12 +425,17 @@ static check_result_t check(mt_node* node) {
         mt_error_emit_and_exit();
       }
 
+      node->id_info.vdepth = idinfo.p_lvar->depth;
+      node->id_info.index = idinfo.p_lvar->index;
+
       result.type = idinfo.p_lvar->type;
       break;
     }
 
+    // Built-in Function
     case ID_BLT_FUNC: {
-      node->callee_builtin = idinfo.builtin_func;
+      node->id_info.kind = NID_BLT_FUNC;
+      node->id_info.callee_builtin = idinfo.builtin_func;
 
       result.type = mt_type_info_new(TYPE_FUNCTION);
       result.callee_builtin = idinfo.builtin_func;
@@ -447,6 +446,8 @@ static check_result_t check(mt_node* node) {
     default:
       todo_impl;
     }
+
+    node->id_info.is_valid = true;
 
     break;
   }

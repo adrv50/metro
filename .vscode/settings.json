@@ -22,10 +22,12 @@
         "source.h": "c",
         "mterr.h": "c",
         "vector": "c",
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "builtin.h": "c",
+        "stdint.h": "c"
     },
 
-    "editor.formatOnSave": true,
+    "editor.formatOnSave": false,
     "editor.formatOnPaste": false,
     "editor.formatOnType": false,
 

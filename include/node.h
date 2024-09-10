@@ -130,7 +130,30 @@ typedef struct {
 
 struct mt_ck_checked_log_t;
 
-typedef struct __attribute__((__packed__)) {
+typedef enum {
+  NID_VARIABLE,
+  NID_FUNCTION,
+  NID_BLT_FUNC,
+} nd_identifier_kind;
+
+//
+// node_identifier_info
+//
+typedef struct {
+  bool is_valid;
+  nd_identifier_kind kind;
+
+  // function
+  struct mt_node* callee_nd;
+  mt_builtin_func_t const* callee_builtin;
+
+  // variable
+  int vdepth;
+  int index;
+  
+} node_identifier_info;
+
+struct __attribute__((__packed__)) mt_node {
   mt_node_kind kind;
   mt_token* tok;
 
@@ -141,24 +164,18 @@ typedef struct __attribute__((__packed__)) {
 
   struct mt_ck_checked_log_t* checked;
 
-  struct mt_node* callee_nd;
-  mt_builtin_func_t const* callee_builtin;
-
   union {
+    // when ND_IDENTIFIER or ND_SCOPE_RESOLUTION
+    node_identifier_info id_info;
+
     // when ND_VALUE
     mt_object* value;
-
-    // ND_VARIABLE, ND_VARDEF (or expr)
-    struct {
-      int vdepth;
-      int index;
-    };
 
     // when ND_TYPENAME
     typename_node_data_t* typend;
   };
 
-} mt_node;
+};
 
 mt_node* node_new(mt_node_kind kind);
 mt_node* node_new_with_token(mt_node_kind k, mt_token* tok);
